@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "receiptly",
+    "slug": "receiptly",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "允许 receiptly 使用相机拍摄购物小票。"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "允许 receiptly 从相册选择购物小票。",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.shaofeiliu.receiptly",
+      "infoPlist": {
+        "NSCameraUsageDescription": "允许 receiptly 使用相机拍摄购物小票。",
+        "NSPhotoLibraryUsageDescription": "允许 receiptly 从相册选择购物小票。",
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

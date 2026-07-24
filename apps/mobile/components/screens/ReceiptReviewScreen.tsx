@@ -1,9 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-import type {
-  ReceiptCandidateLine,
-  ReceiptScanData,
+import {
+  confirmReceipt,
+  ReceiptApiError,
+  type ReceiptCandidateLine,
+  type ReceiptScanConfirmPayload,
+  type ReceiptScanData,
 } from '../../api/receiptScan';
 import {
   centsToInput,
@@ -21,7 +31,7 @@ import {
 type ReceiptReviewScreenProps = {
   initialData: ReceiptScanData;
   onBack: () => void;
-  onSaveDraft: (data: ReceiptScanData) => void;
+  onConfirmed: () => void;
 };
 
 const formatCurrency = (cents: number) =>
@@ -51,7 +61,7 @@ const createEmptyLine = (): EditableReceiptLine => ({
 export function ReceiptReviewScreen({
   initialData,
   onBack,
-  onSaveDraft,
+  onConfirmed,
 }: ReceiptReviewScreenProps) {
   const [receipt, setReceipt] = useState<ReceiptHeaderDraft>({
     declaredTotalInput: centsToInput(initialData.receipt.declaredTotalCents),
@@ -63,16 +73,27 @@ export function ReceiptReviewScreen({
   const [lines, setLines] = useState<EditableReceiptLine[]>(
     initialData.lines.map(toEditableLine),
   );
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   const reconciliation = useMemo(() => {
     const declaredTotal = inputToCents(receipt.declaredTotalInput);
     const includedLines = lines.filter((line) => line.included);
     const parsedPrices = includedLines.map((line) => inputToCents(line.linePriceInput));
     const hasInvalidMoney = declaredTotal === undefined
-      || lines.some((line) =>
-        inputToCents(line.linePriceInput) === undefined
-        || inputToCents(line.unitPriceInput) === undefined);
+      || (typeof declaredTotal === 'number' && declaredTotal < 0)
+      || includedLines.some((line) => {
+        const linePrice = inputToCents(line.linePriceInput);
+        const unitPrice = inputToCents(line.unitPriceInput);
+        return linePrice === undefined
+          || unitPrice === undefined
+          || (typeof linePrice === 'number' && linePrice < 0)
+          || (typeof unitPrice === 'number' && unitPrice < 0);
+      });
     const hasMissingLinePrice = parsedPrices.some((value) => value === null || value === undefined);
+    const hasMissingRequiredFields = !receipt.storeName?.trim()
+      || !receipt.purchasedOn?.trim()
+      || includedLines.some((line) => !line.productName?.trim());
     const lineTotalCents = parsedPrices.reduce<number>(
       (sum, value) => sum + (typeof value === 'number' ? value : 0),
       0,
@@ -88,10 +109,11 @@ export function ReceiptReviewScreen({
     return {
       differenceCents,
       hasInvalidMoney,
+      hasMissingRequiredFields,
       isBalanced,
       lineTotalCents,
     };
-  }, [lines, receipt.declaredTotalInput]);
+  }, [lines, receipt.declaredTotalInput, receipt.purchasedOn, receipt.storeName]);
 
   const updateReceipt = <Field extends keyof ReceiptHeaderDraft>(
     field: Field,
@@ -109,40 +131,56 @@ export function ReceiptReviewScreen({
       line.id === lineId ? { ...line, [field]: value } : line));
   };
 
-  const saveDraft = () => {
-    if (reconciliation.hasInvalidMoney) return;
+  const canConfirm = reconciliation.isBalanced && !reconciliation.hasMissingRequiredFields;
 
+  const createConfirmationPayload = (): ReceiptScanConfirmPayload => {
     const declaredTotalCents = inputToCents(receipt.declaredTotalInput);
-    const savedLines: ReceiptCandidateLine[] = lines.map((line) => {
-      const linePriceCents = inputToCents(line.linePriceInput);
-      const unitPriceCents = inputToCents(line.unitPriceInput);
 
-      return {
-        id: line.id,
-        included: line.included,
-        linePriceCents: typeof linePriceCents === 'number' ? linePriceCents : null,
-        productName: line.productName?.trim() || null,
-        quantity: line.quantity?.trim() || null,
-        rawText: line.rawText,
-        source: line.source,
-        unit: line.unit?.trim() || null,
-        unitPriceBasis: line.unitPriceBasis?.trim() || null,
-        unitPriceCents: typeof unitPriceCents === 'number' ? unitPriceCents : null,
-      };
-    });
-
-    onSaveDraft({
-      lines: savedLines,
+    return {
       receipt: {
-        ...initialData.receipt,
+        currency: initialData.receipt.currency,
         declaredTotalCents: typeof declaredTotalCents === 'number' ? declaredTotalCents : null,
+        id: initialData.receipt.id,
         purchasedAtLocal: receipt.purchasedAtLocal?.trim() || null,
         purchasedOn: receipt.purchasedOn?.trim() || null,
         receiptNumber: receipt.receiptNumber?.trim() || null,
-        status: 'needs_review',
         storeName: receipt.storeName?.trim() || null,
       },
-    });
+      lines: lines.map((line) => {
+        const linePriceCents = inputToCents(line.linePriceInput);
+        const unitPriceCents = inputToCents(line.unitPriceInput);
+
+        return {
+          id: line.id,
+          included: line.included,
+          linePriceCents: typeof linePriceCents === 'number' ? linePriceCents : null,
+          productName: line.productName?.trim() || null,
+          quantity: line.quantity?.trim() || null,
+          rawText: line.rawText?.trim() || null,
+          source: line.source,
+          unit: line.unit?.trim().toLowerCase() || null,
+          unitPriceBasis: line.unitPriceBasis?.trim().toLowerCase() || null,
+          unitPriceCents: typeof unitPriceCents === 'number' ? unitPriceCents : null,
+        };
+      }),
+    };
+  };
+
+  const confirmScannedReceipt = async () => {
+    if (!canConfirm || isConfirming) return;
+
+    setIsConfirming(true);
+    setConfirmError(null);
+    try {
+      await confirmReceipt(createConfirmationPayload());
+      onConfirmed();
+    } catch (error) {
+      setConfirmError(error instanceof ReceiptApiError
+        ? error.message
+        : '确认失败，请稍后重试。');
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   return (
@@ -158,15 +196,15 @@ export function ReceiptReviewScreen({
         </Pressable>
         <View style={styles.navigationCopy}>
           <Text style={styles.navigationTitle}>检查扫描结果</Text>
-          <Text style={styles.navigationSubtitle}>保存前请逐项核对候选内容</Text>
+          <Text style={styles.navigationSubtitle}>确认入账前请逐项核对候选内容</Text>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.candidateNotice}>
-          <Text style={styles.candidateNoticeTitle}>扫描结果尚未入账</Text>
+          <Text style={styles.candidateNoticeTitle}>确认后将正式入账</Text>
           <Text style={styles.candidateNoticeText}>
-            当前状态为待确认，不会进入首页总额和价格历史。
+            请先检查门店、日期、总额和每一条商品内容。
           </Text>
         </View>
 
@@ -223,23 +261,34 @@ export function ReceiptReviewScreen({
           </View>
           <Text style={styles.reconciliationHint}>
             {reconciliation.isBalanced
-              ? '金额一致，可以保存为待确认。'
-              : '金额尚未一致；仍可保存草稿，正式确认时必须处理差异。'}
+              ? reconciliation.hasMissingRequiredFields
+                ? '金额一致，但仍有必填内容需要补充。'
+                : '金额一致，可以确认并计入家庭账本。'
+              : '金额尚未一致，处理差异后才能确认入账。'}
           </Text>
         </View>
 
+        {confirmError && (
+          <View accessibilityRole="alert" style={styles.confirmError}>
+            <Text style={styles.confirmErrorTitle}>未能确认入账</Text>
+            <Text style={styles.confirmErrorText}>{confirmError}</Text>
+          </View>
+        )}
+
         <Pressable
-          accessibilityHint="保存编辑内容，但不会计入正式账本"
+          accessibilityHint="确认这张小票并计入正式账本"
           accessibilityRole="button"
-          disabled={reconciliation.hasInvalidMoney}
-          onPress={saveDraft}
+          disabled={!canConfirm || isConfirming}
+          onPress={confirmScannedReceipt}
           style={({ pressed }) => [
             styles.saveButton,
-            reconciliation.hasInvalidMoney && styles.saveButtonDisabled,
+            (!canConfirm || isConfirming) && styles.saveButtonDisabled,
             pressed && styles.pressed,
           ]}
         >
-          <Text style={styles.saveButtonText}>保存为待确认</Text>
+          {isConfirming
+            ? <ActivityIndicator color="#1A382D" size="small" />
+            : <Text style={styles.saveButtonText}>确认</Text>}
         </Pressable>
       </ScrollView>
     </View>
@@ -295,6 +344,9 @@ const styles = StyleSheet.create({
   reconciliationLabel: { color: '#596C63', fontSize: 13 },
   reconciliationValue: { color: '#263D34', fontSize: 14, fontWeight: '800' },
   reconciliationHint: { color: '#6B776F', fontSize: 11, lineHeight: 17, marginTop: 3 },
+  confirmError: { backgroundColor: '#FFEAE7', borderRadius: 14, padding: 14 },
+  confirmErrorTitle: { color: '#8E3E36', fontSize: 13, fontWeight: '800' },
+  confirmErrorText: { color: '#9A5B54', fontSize: 11, lineHeight: 17, marginTop: 3 },
   saveButton: {
     alignItems: 'center',
     backgroundColor: '#D9E965',

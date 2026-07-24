@@ -2,7 +2,6 @@ import { StyleSheet, Text, View } from 'react-native';
 
 type FilteredSpendingTotalProps = {
   totalCents: number;
-  receiptCount: number;
   lineCount: number;
 };
 
@@ -11,14 +10,13 @@ const formatCurrency = (cents: number) =>
 
 export function FilteredSpendingTotal({
   totalCents,
-  receiptCount,
   lineCount,
 }: FilteredSpendingTotalProps) {
   return (
     <View style={styles.card}>
       <View>
         <Text style={styles.label}>筛选结果总消费</Text>
-        <Text style={styles.meta}>{receiptCount} 张小票 · {lineCount} 条明细</Text>
+        <Text style={styles.meta}>{lineCount} 条已确认明细 · 小票总数待接口提供</Text>
       </View>
       <Text style={styles.amount}>NZ {formatCurrency(totalCents)}</Text>
     </View>

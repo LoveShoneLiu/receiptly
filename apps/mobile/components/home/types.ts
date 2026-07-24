@@ -7,7 +7,7 @@ export type DateRange = {
 
 export type ExpenseFilters = {
   store: string;
-  receiptId: string;
+  receiptNumber: string;
   productName: string;
 };
 

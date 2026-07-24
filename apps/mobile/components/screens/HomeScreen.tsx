@@ -21,11 +21,6 @@ import type {
   PeriodPreset,
 } from '../home/types';
 
-type HomeScreenProps = {
-  draftCount: number;
-  onOpenLatestDraft: () => void;
-};
-
 const PAGE_SIZE = 20;
 
 const filterConfirmedExpenses = ({ range, filters }: AppliedExpenseQuery) =>
@@ -43,7 +38,7 @@ const filterConfirmedExpenses = ({ range, filters }: AppliedExpenseQuery) =>
       && matchesReceipt;
   });
 
-export function HomeScreen({ draftCount, onOpenLatestDraft }: HomeScreenProps) {
+export function HomeScreen() {
   const [overviewPeriod, setOverviewPeriod] = useState<PeriodPreset>('month');
   const [overviewCustomDraft, setOverviewCustomDraft] = useState<DateRange>(INITIAL_CUSTOM_RANGE);
   const [overviewCustomRange, setOverviewCustomRange] = useState<DateRange>(INITIAL_CUSTOM_RANGE);
@@ -184,21 +179,6 @@ export function HomeScreen({ draftCount, onOpenLatestDraft }: HomeScreenProps) {
         </Pressable>
       </View>
 
-      {draftCount > 0 && (
-        <Pressable
-          accessibilityHint="打开最近保存的待确认小票"
-          accessibilityRole="button"
-          onPress={onOpenLatestDraft}
-          style={({ pressed }) => [styles.draftNotice, pressed && styles.pressed]}
-        >
-          <View>
-            <Text style={styles.draftTitle}>{draftCount} 张小票等待确认</Text>
-            <Text style={styles.draftText}>确认完成前不会计入下方支出。</Text>
-          </View>
-          <Text style={styles.draftArrow}>›</Text>
-        </Pressable>
-      )}
-
       <View style={styles.periodCard}>
         <View style={styles.periodHeader}>
           <Text style={styles.sectionLabel}>账单总览时间</Text>
@@ -293,19 +273,6 @@ const styles = StyleSheet.create({
     width: 44,
   },
   toolIcon: { color: '#315D49', fontSize: 21 },
-  draftNotice: {
-    alignItems: 'center',
-    backgroundColor: '#FFF7DF',
-    borderColor: '#F0DFAE',
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 14,
-  },
-  draftTitle: { color: '#654D18', fontSize: 14, fontWeight: '700' },
-  draftText: { color: '#826E3C', fontSize: 11, marginTop: 4 },
-  draftArrow: { color: '#7D682F', fontSize: 24 },
   periodCard: {
     backgroundColor: '#FFFFFF',
     borderColor: '#E3E8E1',

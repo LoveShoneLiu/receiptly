@@ -2,7 +2,7 @@ import type { DateRange, PeriodPreset } from './types';
 
 export const DEFAULT_FILTERS = {
   store: '全部门店',
-  receiptId: '全部小票',
+  receiptNumber: '全部小票',
   productName: '全部商品',
 } as const;
 

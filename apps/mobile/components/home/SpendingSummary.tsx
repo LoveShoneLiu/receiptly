@@ -2,21 +2,21 @@ import { StyleSheet, Text, View } from 'react-native';
 
 type SpendingSummaryProps = {
   totalCents: number;
-  receiptCount: number;
   lineCount: number;
+  updatedAt: string | null;
 };
 
 const formatCurrency = (cents: number) =>
   new Intl.NumberFormat('en-NZ', { currency: 'NZD', style: 'currency' }).format(cents / 100);
 
-export function SpendingSummary({ totalCents, receiptCount, lineCount }: SpendingSummaryProps) {
+export function SpendingSummary({ totalCents, lineCount, updatedAt }: SpendingSummaryProps) {
   return (
     <View style={styles.card}>
       <View style={styles.cardTop}>
         <View>
           <Text style={styles.label}>已确认支出</Text>
           <Text style={styles.amount}>NZ {formatCurrency(totalCents)}</Text>
-          <Text style={styles.updatedAt}>演示快照更新于 2026/07/23</Text>
+          <Text style={styles.updatedAt}>{updatedAt ? `数据更新于 ${updatedAt}` : '正在读取家庭账本'}</Text>
         </View>
         <View style={styles.confirmedBadge}>
           <Text style={styles.confirmedDot}>●</Text>
@@ -27,8 +27,8 @@ export function SpendingSummary({ totalCents, receiptCount, lineCount }: Spendin
       <View style={styles.divider} />
       <View style={styles.metrics}>
         <View style={styles.metric}>
-          <Text style={styles.metricValue}>{receiptCount}</Text>
-          <Text style={styles.metricLabel}>小票</Text>
+          <Text style={styles.metricValue}>—</Text>
+          <Text style={styles.metricLabel}>小票数待接口提供</Text>
         </View>
         <View style={styles.metricDivider} />
         <View style={styles.metric}>
@@ -44,7 +44,7 @@ export function SpendingSummary({ totalCents, receiptCount, lineCount }: Spendin
 
       <View style={styles.notice}>
         <Text style={styles.noticeIcon}>i</Text>
-        <Text style={styles.noticeText}>草稿、处理中和待确认的小票不会计入这里。</Text>
+        <Text style={styles.noticeText}>扫描候选在确认入账前不会计入这里。</Text>
       </View>
     </View>
   );

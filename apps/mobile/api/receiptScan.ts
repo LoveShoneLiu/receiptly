@@ -3,7 +3,7 @@ import { File } from 'expo-file-system';
 
 export type ReceiptStatus = 'draft' | 'processing' | 'needs_review' | 'confirmed' | 'deleted';
 
-export type ReceiptLineSource = 'ai' | 'manual' | 'rule';
+export type ReceiptLineSource = 'ai' | 'manual';
 
 export type ReceiptCandidate = {
   id: string;
@@ -12,14 +12,14 @@ export type ReceiptCandidate = {
   receiptNumber: string | null;
   purchasedOn: string | null;
   purchasedAtLocal: string | null;
-  currency: string;
+  currency: string | null;
   declaredTotalCents: number | null;
   version: number;
 };
 
 export type ReceiptCandidateLine = {
   id: string;
-  rawText: string;
+  rawText: string | null;
   productName: string | null;
   quantity: string | null;
   unit: string | null;
@@ -35,6 +35,20 @@ export type ReceiptScanData = {
   lines: ReceiptCandidateLine[];
 };
 
+export type ReceiptScanConfirmPayload = {
+  receipt: Pick<
+    ReceiptCandidate,
+    | 'id'
+    | 'storeName'
+    | 'receiptNumber'
+    | 'purchasedOn'
+    | 'purchasedAtLocal'
+    | 'currency'
+    | 'declaredTotalCents'
+  >;
+  lines: ReceiptCandidateLine[];
+};
+
 type ReceiptScanResponse = {
   data: ReceiptScanData;
 };
@@ -44,6 +58,11 @@ type ScanReceiptOptions = {
   fileName?: string;
   mimeType?: string;
   receiptId?: string;
+  signal?: AbortSignal;
+};
+
+type ConfirmReceiptOptions = {
+  accessToken?: string;
   signal?: AbortSignal;
 };
 
@@ -68,7 +87,7 @@ const isReceiptStatus = (value: unknown): value is ReceiptStatus =>
   || value === 'deleted';
 
 const isLineSource = (value: unknown): value is ReceiptLineSource =>
-  value === 'ai' || value === 'manual' || value === 'rule';
+  value === 'ai' || value === 'manual';
 
 const isReceipt = (value: unknown): value is ReceiptCandidate => {
   if (!isRecord(value)) return false;
@@ -79,7 +98,7 @@ const isReceipt = (value: unknown): value is ReceiptCandidate => {
     && isNullableString(value.receiptNumber)
     && isNullableString(value.purchasedOn)
     && isNullableString(value.purchasedAtLocal)
-    && typeof value.currency === 'string'
+    && isNullableString(value.currency)
     && isNullableCents(value.declaredTotalCents)
     && Number.isInteger(value.version);
 };
@@ -88,7 +107,7 @@ const isReceiptLine = (value: unknown): value is ReceiptCandidateLine => {
   if (!isRecord(value)) return false;
 
   return typeof value.id === 'string'
-    && typeof value.rawText === 'string'
+    && isNullableString(value.rawText)
     && isNullableString(value.productName)
     && isNullableString(value.quantity)
     && isNullableString(value.unit)
@@ -194,6 +213,54 @@ export async function scanReceiptImage(
   const parsed = parseScanResponse(payload);
   if (parsed.data.receipt.status !== 'needs_review') {
     throw new ReceiptApiError('识别结果尚未进入待确认状态，请稍后重试。');
+  }
+
+  return parsed.data;
+}
+
+export async function confirmReceipt(
+  reviewedCandidate: ReceiptScanConfirmPayload,
+  options: ConfirmReceiptOptions = {},
+): Promise<ReceiptScanData> {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  };
+  if (options.accessToken) headers.Authorization = `Bearer ${options.accessToken}`;
+
+  let response: Awaited<ReturnType<typeof fetch>>;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/receiptly/v1/receipts/scan/confirm`, {
+      body: JSON.stringify(reviewedCandidate),
+      headers,
+      method: 'POST',
+      signal: options.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new ReceiptApiError('已取消本次确认。');
+    }
+    throw new ReceiptApiError(`无法连接确认服务（${API_BASE_URL}），请确认服务已启动后重试。`);
+  }
+
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new ReceiptApiError('确认服务返回了无法读取的数据。');
+  }
+
+  if (!response.ok) {
+    const retryable = response.status >= 500 || response.status === 408 || response.status === 429;
+    throw new ReceiptApiError(
+      getErrorMessage(payload) ?? `确认失败（${response.status}）。`,
+      retryable,
+    );
+  }
+
+  const parsed = parseScanResponse(payload);
+  if (parsed.data.receipt.status !== 'confirmed') {
+    throw new ReceiptApiError('接口已响应，但小票尚未进入已确认状态。', false);
   }
 
   return parsed.data;

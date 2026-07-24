@@ -50,7 +50,7 @@ export function ReceiptHeaderForm({ receipt, onChange }: ReceiptHeaderFormProps)
       <View style={styles.titleRow}>
         <Text style={styles.title}>小票信息</Text>
         <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>待确认</Text>
+          <Text style={styles.statusText}>扫描候选</Text>
         </View>
       </View>
 

@@ -1,6 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { SafeAreaView, StyleSheet, View } from 'react-native';
+import {
+  Alert,
+  SafeAreaView,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 import type { ReceiptScanData } from './api/receiptScan';
 import { BottomNavigation } from './components/BottomNavigation';
@@ -12,18 +17,12 @@ import type { Tab } from './components/types';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('home');
-  const [receiptDrafts, setReceiptDrafts] = useState<ReceiptScanData[]>([]);
   const [receiptToReview, setReceiptToReview] = useState<ReceiptScanData | null>(null);
 
-  const saveReceiptDraft = (data: ReceiptScanData) => {
-    setReceiptDrafts((current) => {
-      const existingIndex = current.findIndex((draft) => draft.receipt.id === data.receipt.id);
-      if (existingIndex === -1) return [...current, data];
-
-      return current.map((draft, index) => index === existingIndex ? data : draft);
-    });
+  const finishConfirmation = () => {
     setReceiptToReview(null);
     setActiveTab('home');
+    Alert.alert('确认成功', '小票已经计入家庭账本。');
   };
 
   return (
@@ -34,19 +33,11 @@ export default function App() {
           <ReceiptReviewScreen
             initialData={receiptToReview}
             onBack={() => setReceiptToReview(null)}
-            onSaveDraft={saveReceiptDraft}
+            onConfirmed={finishConfirmation}
           />
         ) : (
           <>
-            {activeTab === 'home' && (
-              <HomeScreen
-                draftCount={receiptDrafts.length}
-                onOpenLatestDraft={() => {
-                  const latestDraft = receiptDrafts[receiptDrafts.length - 1];
-                  if (latestDraft) setReceiptToReview(latestDraft);
-                }}
-              />
-            )}
+            {activeTab === 'home' && <HomeScreen />}
             {activeTab === 'add' && <AddReceiptScreen onScanComplete={setReceiptToReview} />}
             {activeTab === 'profile' && <ProfileScreen />}
             <BottomNavigation activeTab={activeTab} onChange={setActiveTab} />

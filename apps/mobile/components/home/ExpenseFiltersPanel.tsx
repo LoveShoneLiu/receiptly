@@ -75,7 +75,7 @@ export function ExpenseFiltersPanel({
           <FilterSelect label="门店" onChange={(next) => onFilterChange('store', next)} options={stores} value={filters.store} />
         </View>
         <View style={styles.gridItem}>
-          <FilterSelect label="小票编号" onChange={(next) => onFilterChange('receiptId', next)} options={receipts} value={filters.receiptId} />
+          <FilterSelect label="小票编号" onChange={(next) => onFilterChange('receiptNumber', next)} options={receipts} value={filters.receiptNumber} />
         </View>
       </View>
       <FilterSelect label="商品名" onChange={(next) => onFilterChange('productName', next)} options={products} value={filters.productName} />

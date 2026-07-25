@@ -1,19 +1,63 @@
 import type { DateRange, PeriodPreset } from './types';
 
+const HOUSEHOLD_TIME_ZONE = 'Pacific/Auckland';
+
 export const DEFAULT_FILTERS = {
   store: '全部门店',
   receiptNumber: '全部小票',
   productName: '全部商品',
 } as const;
 
+const formatIsoDate = (date: Date) => date.toISOString().slice(0, 10);
+
+const getHouseholdToday = () => {
+  const parts = new Intl.DateTimeFormat('en-NZ', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: HOUSEHOLD_TIME_ZONE,
+    year: 'numeric',
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+  return new Date(Date.UTC(
+    Number(values.year),
+    Number(values.month) - 1,
+    Number(values.day),
+  ));
+};
+
+const householdToday = getHouseholdToday();
+const startOfWeek = new Date(householdToday);
+const daysSinceMonday = (householdToday.getUTCDay() + 6) % 7;
+startOfWeek.setUTCDate(householdToday.getUTCDate() - daysSinceMonday);
+
+const startOfMonth = new Date(Date.UTC(
+  householdToday.getUTCFullYear(),
+  householdToday.getUTCMonth(),
+  1,
+));
+const endOfMonth = new Date(Date.UTC(
+  householdToday.getUTCFullYear(),
+  householdToday.getUTCMonth() + 1,
+  0,
+));
+const startOfCustomRange = new Date(householdToday);
+startOfCustomRange.setUTCMonth(startOfCustomRange.getUTCMonth() - 1);
+
 export const PERIOD_RANGES: Record<Exclude<PeriodPreset, 'custom'>, DateRange> = {
-  week: { start: '2026-07-20', end: '2026-07-23' },
-  month: { start: '2026-07-01', end: '2026-07-31' },
+  week: {
+    start: formatIsoDate(startOfWeek),
+    end: formatIsoDate(householdToday),
+  },
+  month: {
+    start: formatIsoDate(startOfMonth),
+    end: formatIsoDate(endOfMonth),
+  },
 };
 
 export const INITIAL_CUSTOM_RANGE: DateRange = {
-  start: '2026-06-23',
-  end: '2026-07-23',
+  start: formatIsoDate(startOfCustomRange),
+  end: formatIsoDate(householdToday),
 };
 
 export const isValidIsoDate = (value: string) => {

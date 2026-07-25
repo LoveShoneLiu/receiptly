@@ -5,6 +5,7 @@ import type { DateRange } from './types';
 type CustomDateRangeProps = {
   draftRange: DateRange;
   error: string | null;
+  applyDisabled?: boolean;
   onChange: (field: keyof DateRange, value: string) => void;
   onApply?: () => void;
   showApplyButton?: boolean;
@@ -13,6 +14,7 @@ type CustomDateRangeProps = {
 export function CustomDateRange({
   draftRange,
   error,
+  applyDisabled = false,
   onChange,
   onApply,
   showApplyButton = true,
@@ -27,10 +29,22 @@ export function CustomDateRange({
       {showApplyButton && onApply && (
         <Pressable
           accessibilityRole="button"
+          accessibilityState={{ disabled: applyDisabled }}
+          disabled={applyDisabled}
           onPress={onApply}
-          style={({ pressed }) => [styles.applyButton, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.applyButton,
+            applyDisabled && styles.applyButtonDisabled,
+            pressed && styles.pressed,
+          ]}
         >
-          <Text style={styles.applyButtonText}>应用时间范围</Text>
+          <Text style={[
+            styles.applyButtonText,
+            applyDisabled && styles.applyButtonTextDisabled,
+          ]}
+          >
+            {applyDisabled ? '当前范围已应用' : '应用时间范围'}
+          </Text>
         </Pressable>
       )}
     </View>
@@ -95,5 +109,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   applyButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  applyButtonDisabled: { backgroundColor: '#E3E9E2' },
+  applyButtonTextDisabled: { color: '#78877F' },
   pressed: { opacity: 0.72 },
 });

@@ -2,14 +2,13 @@ import { StyleSheet, Text, View } from 'react-native';
 
 type SpendingSummaryProps = {
   totalCents: number;
-  lineCount: number;
   updatedAt: string | null;
 };
 
 const formatCurrency = (cents: number) =>
   new Intl.NumberFormat('en-NZ', { currency: 'NZD', style: 'currency' }).format(cents / 100);
 
-export function SpendingSummary({ totalCents, lineCount, updatedAt }: SpendingSummaryProps) {
+export function SpendingSummary({ totalCents, updatedAt }: SpendingSummaryProps) {
   return (
     <View style={styles.card}>
       <View style={styles.cardTop}>
@@ -21,24 +20,6 @@ export function SpendingSummary({ totalCents, lineCount, updatedAt }: SpendingSu
         <View style={styles.confirmedBadge}>
           <Text style={styles.confirmedDot}>●</Text>
           <Text style={styles.confirmedText}>仅已确认</Text>
-        </View>
-      </View>
-
-      <View style={styles.divider} />
-      <View style={styles.metrics}>
-        <View style={styles.metric}>
-          <Text style={styles.metricValue}>—</Text>
-          <Text style={styles.metricLabel}>小票数待接口提供</Text>
-        </View>
-        <View style={styles.metricDivider} />
-        <View style={styles.metric}>
-          <Text style={styles.metricValue}>{lineCount}</Text>
-          <Text style={styles.metricLabel}>支出明细</Text>
-        </View>
-        <View style={styles.metricDivider} />
-        <View style={styles.metric}>
-          <Text style={styles.metricValue}>NZD</Text>
-          <Text style={styles.metricLabel}>家庭货币</Text>
         </View>
       </View>
 
@@ -74,18 +55,12 @@ const styles = StyleSheet.create({
   },
   confirmedDot: { color: '#D8E965', fontSize: 9, marginRight: 5 },
   confirmedText: { color: '#E9F2E7', fontSize: 11, fontWeight: '700' },
-  divider: { backgroundColor: 'rgba(255, 255, 255, 0.13)', height: 1, marginVertical: 18 },
-  metrics: { alignItems: 'center', flexDirection: 'row' },
-  metric: { flex: 1 },
-  metricValue: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
-  metricLabel: { color: '#BBD0C0', fontSize: 11, marginTop: 4 },
-  metricDivider: { backgroundColor: 'rgba(255, 255, 255, 0.13)', height: 32, width: 1 },
   notice: {
     alignItems: 'center',
     backgroundColor: 'rgba(10, 28, 21, 0.24)',
     borderRadius: 13,
     flexDirection: 'row',
-    marginTop: 18,
+    marginTop: 20,
     padding: 11,
   },
   noticeIcon: {

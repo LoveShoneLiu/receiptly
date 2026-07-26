@@ -36,6 +36,13 @@ const getImageMimeType = (fileName: string | null | undefined) => {
   return 'image/jpeg';
 };
 
+const getUploadFileName = (fileName: string | null | undefined, mimeType: string) => {
+  const baseName = fileName?.replace(/\.[^.]+$/, '') || `receipt-${Date.now()}`;
+  if (mimeType === 'image/png') return `${baseName}.png`;
+  if (mimeType === 'image/jpeg') return `${baseName}.jpg`;
+  return fileName ?? `${baseName}.jpg`;
+};
+
 export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScreenProps) {
   const scanControllerRef = useRef<AbortController | null>(null);
   const [selectedImage, setSelectedImage] = useState<SelectedReceiptImage | null>(null);
@@ -66,16 +73,17 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
       const result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: false,
         mediaTypes: ['images'],
-        quality: 1,
+        preferredAssetRepresentationMode:
+          ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+        quality: 0.95,
       });
       const asset = result.canceled ? null : result.assets[0];
 
       if (asset?.uri) {
-        const fallbackFileName = `receipt-${Date.now()}.jpg`;
-        const fileName = asset.fileName ?? fallbackFileName;
+        const mimeType = asset.mimeType ?? getImageMimeType(asset.fileName);
         setSelectedImage({
-          fileName,
-          mimeType: asset.mimeType ?? getImageMimeType(fileName),
+          fileName: getUploadFileName(asset.fileName, mimeType),
+          mimeType,
           uri: asset.uri,
         });
       }

@@ -1,5 +1,3 @@
-import * as AppleAuthentication from 'expo-apple-authentication';
-import * as Crypto from 'expo-crypto';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,8 +12,6 @@ import {
 } from 'react-native';
 
 import {
-  createAuthChallenge,
-  loginWithApple,
   loginWithEmailPassword,
   registerWithEmailPassword,
   requestEmailCode,
@@ -25,7 +21,6 @@ import { useAuth } from '../../auth/AuthContext';
 
 type EmailMode = 'login' | 'register' | 'code';
 type BusyAction =
-  | 'apple'
   | 'email-login'
   | 'email-register'
   | 'email-request'
@@ -47,7 +42,6 @@ const validateEmail = (email: string) => {
 
 export function LoginScreen() {
   const { acceptSession } = useAuth();
-  const [appleAvailable, setAppleAvailable] = useState(false);
   const [busy, setBusy] = useState<BusyAction>(null);
   const [email, setEmail] = useState('');
   const [emailMode, setEmailMode] = useState<EmailMode>('login');
@@ -59,10 +53,6 @@ export function LoginScreen() {
   const [registrationCodeRequested, setRegistrationCodeRequested] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendSeconds, setResendSeconds] = useState(0);
-
-  useEffect(() => {
-    void AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
-  }, []);
 
   useEffect(() => {
     if (resendSeconds <= 0) return undefined;
@@ -84,40 +74,6 @@ export function LoginScreen() {
       setBusy(null);
     }
   };
-
-  const signInWithApple = () => run('apple', async () => {
-    const challenge = await createAuthChallenge('apple');
-    if (!challenge.nonce) throw new Error('服务端没有返回 Apple 登录 nonce。');
-    const hashedNonce = await Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      challenge.nonce,
-    );
-    const credential = await AppleAuthentication.signInAsync({
-      nonce: hashedNonce,
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
-      state: challenge.state ?? undefined,
-    });
-    if (challenge.state && credential.state !== challenge.state) {
-      throw new Error('Apple 登录状态校验失败，请重新尝试。');
-    }
-    if (!credential.identityToken || !credential.authorizationCode) {
-      throw new Error('Apple 没有返回完整登录凭据，请重新尝试。');
-    }
-    const session = await loginWithApple({
-      attemptId: challenge.attemptId,
-      authorizationCode: credential.authorizationCode,
-      identityToken: credential.identityToken,
-      profile: {
-        email: credential.email,
-        familyName: credential.fullName?.familyName ?? null,
-        givenName: credential.fullName?.givenName ?? null,
-      },
-    });
-    await acceptSession(session);
-  });
 
   const requestCode = () => run('email-request', async () => {
     const normalizedEmail = validateEmail(email);
@@ -185,22 +141,6 @@ export function LoginScreen() {
         </View>
 
         <View style={styles.card}>
-          {appleAvailable && (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-              cornerRadius={12}
-              onPress={signInWithApple}
-              style={styles.appleButton}
-            />
-          )}
-
-          <View style={styles.dividerRow}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>使用邮箱</Text>
-            <View style={styles.divider} />
-          </View>
-
           <View accessibilityRole="tablist" style={styles.modeSelector}>
             <ModeButton
               label="密码登录"
@@ -428,10 +368,6 @@ const styles = StyleSheet.create({
   title: { color: '#17372C', fontSize: 32, fontWeight: '800', marginTop: 8 },
   subtitle: { color: '#667970', fontSize: 14, lineHeight: 21, marginTop: 8 },
   card: { backgroundColor: '#FFFFFF', borderColor: '#E2E8E1', borderRadius: 22, borderWidth: 1, padding: 20 },
-  appleButton: { height: 52, width: '100%' },
-  dividerRow: { alignItems: 'center', flexDirection: 'row', marginVertical: 20 },
-  divider: { backgroundColor: '#E2E7E2', flex: 1, height: 1 },
-  dividerText: { color: '#829087', fontSize: 12, marginHorizontal: 12 },
   modeSelector: { backgroundColor: '#F0F4EF', borderRadius: 12, flexDirection: 'row', padding: 4 },
   modeButton: { alignItems: 'center', borderRadius: 9, flex: 1, justifyContent: 'center', minHeight: 42, paddingHorizontal: 5 },
   modeButtonSelected: { backgroundColor: '#FFFFFF' },

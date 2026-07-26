@@ -78,6 +78,7 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
   const [detailData, setDetailData] = useState<HomeExpensesData | null>(null);
   const [page, setPage] = useState(1);
   const [pageCursors, setPageCursors] = useState<Array<string | undefined>>([undefined]);
+  const [pendingPage, setPendingPage] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -117,11 +118,9 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
   }, [detailData, detailFilters]);
 
   const loadData = useCallback(async ({
-    currentPage = page,
     currentQuery = appliedDetailQuery,
     isRefresh = false,
   }: {
-    currentPage?: number;
     currentQuery?: AppliedExpenseQuery;
     isRefresh?: boolean;
   } = {}) => {
@@ -132,7 +131,6 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
     setError(null);
 
     try {
-      const cursor = pageCursors[currentPage - 1];
       const [nextOverviewData, nextDetailData] = await Promise.all([
         getHomeExpenses(householdId, {
           start: activeOverviewRange.start,
@@ -141,7 +139,7 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
         }, { accessToken }),
         getHomeExpenses(
           householdId,
-          toApiQuery(currentQuery, cursor),
+          toApiQuery(currentQuery),
           { accessToken },
         ),
       ]);
@@ -149,6 +147,8 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
 
       setOverviewData(nextOverviewData);
       setDetailData(nextDetailData);
+      setPage(1);
+      setPageCursors([undefined]);
     } catch (loadError) {
       if (requestId !== requestIdRef.current) return;
       setError(getMessage(loadError));
@@ -164,8 +164,6 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
     accessToken,
     appliedDetailQuery,
     householdId,
-    page,
-    pageCursors,
   ]);
 
   useEffect(() => {
@@ -224,15 +222,47 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
     setPageCursors([undefined]);
   };
 
+  const loadExpensePage = async (targetPage: number, cursor: string | undefined) => {
+    if (pendingPage !== null || targetPage < 1) return;
+
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    setPendingPage(targetPage);
+    setError(null);
+
+    try {
+      const nextDetailData = await getHomeExpenses(
+        householdId,
+        toApiQuery(appliedDetailQuery, cursor),
+        { accessToken },
+      );
+      if (requestId !== requestIdRef.current) return;
+
+      setDetailData(nextDetailData);
+      setPage(targetPage);
+    } catch (loadError) {
+      if (requestId === requestIdRef.current) setError(getMessage(loadError));
+    } finally {
+      if (requestId === requestIdRef.current) setPendingPage(null);
+    }
+  };
+
   const goToNextPage = () => {
     const nextCursor = detailData?.page.nextCursor;
     if (!nextCursor) return;
+
+    const targetPage = page + 1;
     setPageCursors((current) => {
       const next = [...current];
-      next[page] = nextCursor;
+      next[targetPage - 1] = nextCursor;
       return next;
     });
-    setPage(page + 1);
+    void loadExpensePage(targetPage, nextCursor);
+  };
+
+  const goToPreviousPage = () => {
+    const targetPage = Math.max(1, page - 1);
+    void loadExpensePage(targetPage, pageCursors[targetPage - 1]);
   };
 
   const updatedAt = overviewData
@@ -366,9 +396,10 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
       <ExpenseList
         expenses={detailData?.items ?? []}
         hasMore={detailData?.page.hasMore ?? false}
-        loading={loading}
+        loading={loading || pendingPage !== null}
+        loadingPage={pendingPage}
         onNextPage={goToNextPage}
-        onPreviousPage={() => setPage((current) => Math.max(1, current - 1))}
+        onPreviousPage={goToPreviousPage}
         onResetFilters={clearAppliedDetailFilters}
         page={page}
         pageSize={PAGE_SIZE}

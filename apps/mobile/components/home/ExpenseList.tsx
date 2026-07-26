@@ -9,6 +9,7 @@ type ExpenseListProps = {
   totalLineCount: number;
   hasMore: boolean;
   loading: boolean;
+  loadingPage: number | null;
   onNextPage: () => void;
   onPreviousPage: () => void;
   onResetFilters: () => void;
@@ -37,10 +38,13 @@ export function ExpenseList({
   totalLineCount,
   hasMore,
   loading,
+  loadingPage,
   onNextPage,
   onPreviousPage,
   onResetFilters,
 }: ExpenseListProps) {
+  const totalPages = Math.max(1, Math.ceil(totalLineCount / pageSize));
+
   return (
     <View style={styles.section}>
       <View style={styles.header}>
@@ -52,6 +56,12 @@ export function ExpenseList({
           <Text style={styles.sortText}>最新优先</Text>
         </View>
       </View>
+
+      {loadingPage !== null && (
+        <View accessibilityLiveRegion="polite" style={styles.pageLoading}>
+          <Text style={styles.pageLoadingText}>正在加载第 {loadingPage} 页…</Text>
+        </View>
+      )}
 
       {expenses.length === 0 ? (
         <View style={styles.empty}>
@@ -82,7 +92,7 @@ export function ExpenseList({
             onPress={onPreviousPage}
           />
           <View style={styles.pageIndicator}>
-            <Text style={styles.pageIndicatorText}>第 {page} 页</Text>
+            <Text style={styles.pageIndicatorText}>{page} / {totalPages} 页</Text>
           </View>
           <PageButton
             disabled={!hasMore || loading}
@@ -235,6 +245,14 @@ const styles = StyleSheet.create({
   emptyText: { color: '#74847C', fontSize: 13, lineHeight: 20, marginTop: 7, textAlign: 'center' },
   emptyButton: { backgroundColor: '#EDF3E9', borderRadius: 12, justifyContent: 'center', marginTop: 16, minHeight: 44, paddingHorizontal: 16 },
   emptyButtonText: { color: '#315D49', fontSize: 13, fontWeight: '700' },
+  pageLoading: {
+    alignItems: 'center',
+    backgroundColor: '#EEF3EA',
+    borderRadius: 12,
+    justifyContent: 'center',
+    minHeight: 36,
+  },
+  pageLoadingText: { color: '#486257', fontSize: 12, fontWeight: '700' },
   pagination: { alignItems: 'center', flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
   pageButton: {
     alignItems: 'center',
@@ -249,7 +267,7 @@ const styles = StyleSheet.create({
   pageButtonDisabled: { backgroundColor: '#F2F4F1', borderColor: '#EBEEEA' },
   pageButtonText: { color: '#315D49', fontSize: 13, fontWeight: '700' },
   pageButtonTextDisabled: { color: '#AAB4AE' },
-  pageIndicator: { alignItems: 'center', minWidth: 66 },
+  pageIndicator: { alignItems: 'center', minWidth: 82 },
   pageIndicatorText: { color: '#5C6F66', fontSize: 13, fontWeight: '700' },
   pressed: { opacity: 0.72 },
 });

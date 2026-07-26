@@ -114,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await persistSession(null);
     if (!current) return;
     try {
-      await logoutSession(current.accessToken, current.refreshToken);
+      await logoutSession(current.accessToken);
     } catch {
       // Local logout must still succeed when the server is unavailable.
     }

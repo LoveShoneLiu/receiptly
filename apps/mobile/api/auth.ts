@@ -163,9 +163,43 @@ export async function verifyEmailCode(email: string, code: string) {
   return toSession(parseLoginPayload(unwrapData(payload)));
 }
 
+export async function loginWithEmailPassword(email: string, password: string) {
+  const payload = await publicRequest('/auth/email/login', {
+    body: JSON.stringify({
+      device: await getDeviceInfo(),
+      email: email.trim().toLowerCase(),
+      password,
+    }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  });
+  return toSession(parseLoginPayload(unwrapData(payload)));
+}
+
+export async function registerWithEmailPassword(input: {
+  code: string;
+  displayName: string | null;
+  email: string;
+  password: string;
+}) {
+  const payload = await publicRequest('/auth/email/register', {
+    body: JSON.stringify({
+      device: await getDeviceInfo(),
+      ...input,
+      email: input.email.trim().toLowerCase(),
+    }),
+    headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+  });
+  return toSession(parseLoginPayload(unwrapData(payload)));
+}
+
 export async function refreshSession(refreshToken: string, current: AuthSession) {
   const payload = await publicRequest('/auth/refresh', {
-    body: JSON.stringify({ refreshToken }),
+    body: JSON.stringify({
+      installationId: (await getDeviceInfo()).installationId,
+      refreshToken,
+    }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   });
@@ -173,7 +207,8 @@ export async function refreshSession(refreshToken: string, current: AuthSession)
   if (!isRecord(data)
     || typeof data.accessToken !== 'string'
     || typeof data.refreshToken !== 'string'
-    || !Number.isFinite(data.expiresIn)) {
+    || !Number.isFinite(data.expiresIn)
+    || typeof data.sessionId !== 'string') {
     throw new Error('刷新登录状态的响应格式不正确。');
   }
   return {
@@ -181,6 +216,7 @@ export async function refreshSession(refreshToken: string, current: AuthSession)
     accessToken: data.accessToken,
     expiresAt: Date.now() + Number(data.expiresIn) * 1000,
     refreshToken: data.refreshToken,
+    sessionId: data.sessionId,
   };
 }
 
@@ -206,12 +242,10 @@ export async function getMe(accessToken: string, current: AuthSession) {
   };
 }
 
-export async function logoutSession(accessToken: string, refreshToken: string) {
+export async function logoutSession(accessToken: string) {
   await publicRequest('/auth/logout', {
-    body: JSON.stringify({ refreshToken }),
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
     },
     method: 'POST',
   });

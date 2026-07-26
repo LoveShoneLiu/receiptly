@@ -1,5 +1,6 @@
-import { fetch } from 'expo/fetch';
 import { File } from 'expo-file-system';
+
+import { ApiError, isRecord, publicRequest } from './base';
 
 export type ReceiptStatus = 'draft' | 'processing' | 'needs_review' | 'confirmed' | 'deleted';
 
@@ -49,10 +50,6 @@ export type ReceiptScanConfirmPayload = {
   lines: ReceiptCandidateLine[];
 };
 
-type ReceiptScanResponse = {
-  data: ReceiptScanData;
-};
-
 type ScanReceiptOptions = {
   accessToken?: string;
   fileName?: string;
@@ -66,12 +63,8 @@ type ConfirmReceiptOptions = {
   signal?: AbortSignal;
 };
 
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:3000').replace(/\/$/, '');
 const MAX_RECEIPT_IMAGE_BYTES = 7 * 1024 * 1024;
 const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png']);
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
 
 const isNullableString = (value: unknown): value is string | null =>
   typeof value === 'string' || value === null;
@@ -118,30 +111,33 @@ const isReceiptLine = (value: unknown): value is ReceiptCandidateLine => {
     && typeof value.included === 'boolean';
 };
 
-const parseScanResponse = (value: unknown): ReceiptScanResponse => {
-  if (!isRecord(value) || !isRecord(value.data)) {
+const parseScanData = (value: unknown): ReceiptScanData => {
+  if (!isRecord(value)) {
     throw new ReceiptApiError('接口返回的数据格式不正确。', false);
   }
 
-  const { receipt, lines } = value.data;
+  const { receipt, lines } = value;
   if (!isReceipt(receipt) || !Array.isArray(lines) || !lines.every(isReceiptLine)) {
     throw new ReceiptApiError('扫描结果缺少必要字段，请检查接口版本。', false);
   }
 
-  return { data: { receipt, lines } };
-};
-
-const getErrorMessage = (value: unknown) => {
-  if (!isRecord(value) || !isRecord(value.error)) return null;
-  return typeof value.error.message === 'string' ? value.error.message : null;
+  return { receipt, lines };
 };
 
 export class ReceiptApiError extends Error {
+  code?: string;
+  details?: Record<string, unknown>;
   retryable: boolean;
 
-  constructor(message: string, retryable = true) {
+  constructor(
+    message: string,
+    retryable = true,
+    apiError?: Pick<ApiError, 'code' | 'details'>,
+  ) {
     super(message);
     this.name = 'ReceiptApiError';
+    this.code = apiError?.code;
+    this.details = apiError?.details;
     this.retryable = retryable;
   }
 }
@@ -175,47 +171,39 @@ export async function scanReceiptImage(
   formData.append('image', uploadFile, options.fileName ?? imageFile.name);
 
   const receiptPath = options.receiptId
-    ? `/api/receiptly/v1/receipts/${options.receiptId}/scan`
-    : '/api/receiptly/v1/receipts/scan';
+    ? `/receipts/${options.receiptId}/scan`
+    : '/receipts/scan';
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (options.accessToken) headers.Authorization = `Bearer ${options.accessToken}`;
 
-  let response: Awaited<ReturnType<typeof fetch>>;
+  let data: unknown;
   try {
-    response = await fetch(`${API_BASE_URL}${receiptPath}`, {
+    data = await publicRequest<unknown>(receiptPath, {
       body: formData,
       headers,
       method: 'POST',
       signal: options.signal,
     });
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (options.signal?.aborted) {
       throw new ReceiptApiError('已取消本次识别。');
     }
-    throw new ReceiptApiError(`无法连接识别服务（${API_BASE_URL}），请确认服务已启动后重试。`);
+    if (error instanceof ApiError) {
+      const retryable = error.httpStatus === 0
+        || error.httpStatus >= 500
+        || error.httpStatus === 408
+        || error.httpStatus === 429;
+      throw new ReceiptApiError(error.message, retryable, error);
+    }
+    throw error;
   }
 
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch {
-    throw new ReceiptApiError('识别服务返回了无法读取的数据。');
-  }
-
-  if (!response.ok) {
-    const retryable = response.status >= 500 || response.status === 408 || response.status === 429;
-    throw new ReceiptApiError(
-      getErrorMessage(payload) ?? `识别失败（${response.status}）。`,
-      retryable,
-    );
-  }
-
-  const parsed = parseScanResponse(payload);
-  if (parsed.data.receipt.status !== 'needs_review') {
+  const parsed = parseScanData(data);
+  if (parsed.receipt.status !== 'needs_review') {
     throw new ReceiptApiError('识别结果尚未进入待确认状态，请稍后重试。');
   }
 
-  return parsed.data;
+  return parsed;
 }
 
 export async function confirmReceipt(
@@ -228,40 +216,32 @@ export async function confirmReceipt(
   };
   if (options.accessToken) headers.Authorization = `Bearer ${options.accessToken}`;
 
-  let response: Awaited<ReturnType<typeof fetch>>;
+  let data: unknown;
   try {
-    response = await fetch(`${API_BASE_URL}/api/receiptly/v1/receipts/scan/confirm`, {
+    data = await publicRequest<unknown>('/receipts/scan/confirm', {
       body: JSON.stringify(reviewedCandidate),
       headers,
       method: 'POST',
       signal: options.signal,
     });
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (options.signal?.aborted) {
       throw new ReceiptApiError('已取消本次确认。');
     }
-    throw new ReceiptApiError(`无法连接确认服务（${API_BASE_URL}），请确认服务已启动后重试。`);
+    if (error instanceof ApiError) {
+      const retryable = error.httpStatus === 0
+        || error.httpStatus >= 500
+        || error.httpStatus === 408
+        || error.httpStatus === 429;
+      throw new ReceiptApiError(error.message, retryable, error);
+    }
+    throw error;
   }
 
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch {
-    throw new ReceiptApiError('确认服务返回了无法读取的数据。');
-  }
-
-  if (!response.ok) {
-    const retryable = response.status >= 500 || response.status === 408 || response.status === 429;
-    throw new ReceiptApiError(
-      getErrorMessage(payload) ?? `确认失败（${response.status}）。`,
-      retryable,
-    );
-  }
-
-  const parsed = parseScanResponse(payload);
-  if (parsed.data.receipt.status !== 'confirmed') {
+  const parsed = parseScanData(data);
+  if (parsed.receipt.status !== 'confirmed') {
     throw new ReceiptApiError('接口已响应，但小票尚未进入已确认状态。', false);
   }
 
-  return parsed.data;
+  return parsed;
 }

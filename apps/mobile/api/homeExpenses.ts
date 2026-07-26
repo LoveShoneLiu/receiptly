@@ -1,5 +1,4 @@
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:3000')
-  .replace(/\/$/, '');
+import { isRecord, publicRequest } from './base';
 
 export type HomeExpense = {
   id: string;
@@ -44,45 +43,6 @@ type RequestOptions = {
   signal?: AbortSignal;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
-
-const getErrorMessage = (value: unknown) => {
-  if (!isRecord(value) || !isRecord(value.error)) return null;
-  return typeof value.error.message === 'string' ? value.error.message : null;
-};
-
-const requestJson = async (path: string, options: RequestOptions = {}) => {
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: {
-        Accept: 'application/json',
-        ...(options.accessToken
-          ? { Authorization: `Bearer ${options.accessToken}` }
-          : {}),
-      },
-      signal: options.signal,
-    });
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') throw error;
-    throw new Error(`无法连接家庭账本服务（${API_BASE_URL}）。`);
-  }
-
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch {
-    throw new Error('家庭账本服务返回了无法读取的数据。');
-  }
-
-  if (!response.ok) {
-    throw new Error(getErrorMessage(payload) ?? `获取家庭账本失败（${response.status}）。`);
-  }
-
-  return payload;
-};
-
 const isNullableString = (value: unknown) => typeof value === 'string' || value === null;
 
 const isHomeExpense = (value: unknown): value is HomeExpense => {
@@ -124,13 +84,18 @@ export async function getHomeExpenses(
     if (value !== undefined && value !== '') params.set(key, String(value));
   });
 
-  const payload = await requestJson(
-    `/api/receiptly/v1/households/${encodeURIComponent(householdId)}/home/expenses?${params.toString()}`,
-    options,
+  const data = await publicRequest<unknown>(
+    `/households/${encodeURIComponent(householdId)}/home/expenses?${params.toString()}`,
+    {
+      headers: options.accessToken
+        ? { Authorization: `Bearer ${options.accessToken}` }
+        : undefined,
+      signal: options.signal,
+    },
   );
-  if (!isRecord(payload) || !isHomeExpensesData(payload.data)) {
+  if (!isHomeExpensesData(data)) {
     throw new Error('首页支出接口返回的数据格式不正确。');
   }
 
-  return payload.data;
+  return data;
 }

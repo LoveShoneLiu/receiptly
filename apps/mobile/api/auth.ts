@@ -67,13 +67,6 @@ const toSession = (payload: LoginSessionPayload): AuthSession => ({
   user: payload.user,
 });
 
-const unwrapData = (payload: unknown) => {
-  if (!isRecord(payload) || !('data' in payload)) {
-    throw new Error('接口响应缺少 data 字段。');
-  }
-  return payload.data;
-};
-
 export const getDeviceInfo = async (): Promise<DeviceInfo> => ({
   installationId: await getInstallationId(),
   name: Platform.OS === 'ios' ? 'iPhone' : 'Android device',
@@ -81,12 +74,11 @@ export const getDeviceInfo = async (): Promise<DeviceInfo> => ({
 });
 
 export async function createAuthChallenge(provider: ChallengeProvider) {
-  const payload = await publicRequest('/auth/challenges', {
+  const data = await publicRequest<unknown>('/auth/challenges', {
     body: JSON.stringify({ provider }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   });
-  const data = unwrapData(payload);
   if (!isRecord(data)
     || typeof data.attemptId !== 'string'
     || !isNullableString(data.nonce)
@@ -99,7 +91,7 @@ export async function createAuthChallenge(provider: ChallengeProvider) {
 }
 
 export async function loginWithGoogle(attemptId: string, idToken: string) {
-  const payload = await publicRequest('/auth/google', {
+  const data = await publicRequest<unknown>('/auth/google', {
     body: JSON.stringify({
       attemptId,
       device: await getDeviceInfo(),
@@ -108,7 +100,7 @@ export async function loginWithGoogle(attemptId: string, idToken: string) {
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   });
-  return toSession(parseLoginPayload(unwrapData(payload)));
+  return toSession(parseLoginPayload(data));
 }
 
 export async function loginWithApple(input: {
@@ -121,7 +113,7 @@ export async function loginWithApple(input: {
     givenName: string | null;
   };
 }) {
-  const payload = await publicRequest('/auth/apple', {
+  const data = await publicRequest<unknown>('/auth/apple', {
     body: JSON.stringify({
       ...input,
       device: await getDeviceInfo(),
@@ -129,16 +121,15 @@ export async function loginWithApple(input: {
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   });
-  return toSession(parseLoginPayload(unwrapData(payload)));
+  return toSession(parseLoginPayload(data));
 }
 
 export async function requestEmailCode(email: string) {
-  const payload = await publicRequest('/auth/email/request-code', {
+  const data = await publicRequest<unknown>('/auth/email/request-code', {
     body: JSON.stringify({ email: email.trim().toLowerCase(), locale: 'zh-CN' }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   });
-  const data = unwrapData(payload);
   if (!isRecord(data)
     || !Number.isFinite(data.expiresIn)
     || !Number.isFinite(data.resendAfter)) {
@@ -151,7 +142,7 @@ export async function requestEmailCode(email: string) {
 }
 
 export async function verifyEmailCode(email: string, code: string) {
-  const payload = await publicRequest('/auth/email/verify-code', {
+  const data = await publicRequest<unknown>('/auth/email/verify-code', {
     body: JSON.stringify({
       code,
       device: await getDeviceInfo(),
@@ -160,11 +151,11 @@ export async function verifyEmailCode(email: string, code: string) {
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   });
-  return toSession(parseLoginPayload(unwrapData(payload)));
+  return toSession(parseLoginPayload(data));
 }
 
 export async function loginWithEmailPassword(email: string, password: string) {
-  const payload = await publicRequest('/auth/email/login', {
+  const data = await publicRequest<unknown>('/auth/email/login', {
     body: JSON.stringify({
       device: await getDeviceInfo(),
       email: email.trim().toLowerCase(),
@@ -173,7 +164,7 @@ export async function loginWithEmailPassword(email: string, password: string) {
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   });
-  return toSession(parseLoginPayload(unwrapData(payload)));
+  return toSession(parseLoginPayload(data));
 }
 
 export async function registerWithEmailPassword(input: {
@@ -182,7 +173,7 @@ export async function registerWithEmailPassword(input: {
   email: string;
   password: string;
 }) {
-  const payload = await publicRequest('/auth/email/register', {
+  const data = await publicRequest<unknown>('/auth/email/register', {
     body: JSON.stringify({
       device: await getDeviceInfo(),
       ...input,
@@ -191,11 +182,11 @@ export async function registerWithEmailPassword(input: {
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   });
-  return toSession(parseLoginPayload(unwrapData(payload)));
+  return toSession(parseLoginPayload(data));
 }
 
 export async function refreshSession(refreshToken: string, current: AuthSession) {
-  const payload = await publicRequest('/auth/refresh', {
+  const data = await publicRequest<unknown>('/auth/refresh', {
     body: JSON.stringify({
       installationId: (await getDeviceInfo()).installationId,
       refreshToken,
@@ -203,7 +194,6 @@ export async function refreshSession(refreshToken: string, current: AuthSession)
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   });
-  const data = unwrapData(payload);
   if (!isRecord(data)
     || typeof data.accessToken !== 'string'
     || typeof data.refreshToken !== 'string'
@@ -221,10 +211,9 @@ export async function refreshSession(refreshToken: string, current: AuthSession)
 }
 
 export async function getMe(accessToken: string, current: AuthSession) {
-  const payload = await publicRequest('/me', {
+  const data = await publicRequest<unknown>('/me', {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  const data = unwrapData(payload);
   if (!isRecord(data)
     || !isUser(data.user)
     || !Array.isArray(data.households)
@@ -243,7 +232,7 @@ export async function getMe(accessToken: string, current: AuthSession) {
 }
 
 export async function logoutSession(accessToken: string) {
-  await publicRequest('/auth/logout', {
+  await publicRequest<unknown>('/auth/logout', {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -252,7 +241,7 @@ export async function logoutSession(accessToken: string) {
 }
 
 export async function createHousehold(accessToken: string, name: string) {
-  const payload = await publicRequest('/households', {
+  const data = await publicRequest<unknown>('/households', {
     body: JSON.stringify({
       currency: 'NZD',
       name: name.trim(),
@@ -264,7 +253,6 @@ export async function createHousehold(accessToken: string, name: string) {
     },
     method: 'POST',
   });
-  const data = unwrapData(payload);
   if (!isRecord(data)
     || !isHousehold(data.household)
     || typeof data.activeHouseholdId !== 'string'

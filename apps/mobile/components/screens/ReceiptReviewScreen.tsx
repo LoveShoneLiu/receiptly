@@ -29,6 +29,7 @@ import {
 } from '../receipt/ReceiptLineEditor';
 
 type ReceiptReviewScreenProps = {
+  accessToken: string;
   initialData: ReceiptScanData;
   onBack: () => void;
   onConfirmed: () => void;
@@ -59,6 +60,7 @@ const createEmptyLine = (): EditableReceiptLine => ({
 });
 
 export function ReceiptReviewScreen({
+  accessToken,
   initialData,
   onBack,
   onConfirmed,
@@ -172,7 +174,7 @@ export function ReceiptReviewScreen({
     setIsConfirming(true);
     setConfirmError(null);
     try {
-      await confirmReceipt(createConfirmationPayload());
+      await confirmReceipt(createConfirmationPayload(), { accessToken });
       onConfirmed();
     } catch (error) {
       setConfirmError(error instanceof ReceiptApiError

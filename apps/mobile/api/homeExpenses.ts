@@ -1,19 +1,6 @@
 const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:3000')
   .replace(/\/$/, '');
 
-export type MockSession = {
-  user: {
-    userId: string;
-    email: string;
-    displayName: string;
-  };
-  household: {
-    id: string;
-    name: string;
-    role: 'owner' | 'member';
-  };
-};
-
 export type HomeExpense = {
   id: string;
   receiptId: string;
@@ -53,6 +40,7 @@ export type HomeExpensesQuery = {
 };
 
 type RequestOptions = {
+  accessToken?: string;
   signal?: AbortSignal;
 };
 
@@ -68,7 +56,12 @@ const requestJson = async (path: string, options: RequestOptions = {}) => {
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: { Accept: 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        ...(options.accessToken
+          ? { Authorization: `Bearer ${options.accessToken}` }
+          : {}),
+      },
       signal: options.signal,
     });
   } catch (error) {
@@ -88,17 +81,6 @@ const requestJson = async (path: string, options: RequestOptions = {}) => {
   }
 
   return payload;
-};
-
-const isMockSession = (value: unknown): value is MockSession => {
-  if (!isRecord(value) || !isRecord(value.user) || !isRecord(value.household)) return false;
-
-  return typeof value.user.userId === 'string'
-    && typeof value.user.email === 'string'
-    && typeof value.user.displayName === 'string'
-    && typeof value.household.id === 'string'
-    && typeof value.household.name === 'string'
-    && (value.household.role === 'owner' || value.household.role === 'member');
 };
 
 const isNullableString = (value: unknown) => typeof value === 'string' || value === null;
@@ -131,15 +113,6 @@ const isHomeExpensesData = (value: unknown): value is HomeExpensesData => {
     && typeof value.page.hasMore === 'boolean'
     && isNullableString(value.page.nextCursor);
 };
-
-export async function getMockSession(options: RequestOptions = {}) {
-  const payload = await requestJson('/api/receiptly/v1/mock/session', options);
-  if (!isRecord(payload) || !isMockSession(payload.data)) {
-    throw new Error('家庭会话接口返回的数据格式不正确。');
-  }
-
-  return payload.data;
-}
 
 export async function getHomeExpenses(
   householdId: string,

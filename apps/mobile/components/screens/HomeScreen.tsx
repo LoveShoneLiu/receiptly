@@ -11,7 +11,6 @@ import {
 
 import {
   getHomeExpenses,
-  getMockSession,
   type HomeExpense,
   type HomeExpensesData,
 } from '../../api/homeExpenses';
@@ -56,8 +55,12 @@ const uniqueValues = (
   select: (item: HomeExpense) => string | null,
 ) => [...new Set(items.map(select).filter((value): value is string => Boolean(value)))];
 
-export function HomeScreen() {
-  const [householdId, setHouseholdId] = useState<string | null>(null);
+type HomeScreenProps = {
+  accessToken: string;
+  householdId: string;
+};
+
+export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
   const [overviewPeriod, setOverviewPeriod] = useState<PeriodPreset>('month');
   const [overviewCustomDraft, setOverviewCustomDraft] = useState<DateRange>(INITIAL_CUSTOM_RANGE);
   const [overviewCustomRange, setOverviewCustomRange] = useState<DateRange>(INITIAL_CUSTOM_RANGE);
@@ -114,12 +117,10 @@ export function HomeScreen() {
   }, [detailData, detailFilters]);
 
   const loadData = useCallback(async ({
-    currentHouseholdId,
     currentPage = page,
     currentQuery = appliedDetailQuery,
     isRefresh = false,
   }: {
-    currentHouseholdId?: string | null;
     currentPage?: number;
     currentQuery?: AppliedExpenseQuery;
     isRefresh?: boolean;
@@ -131,21 +132,21 @@ export function HomeScreen() {
     setError(null);
 
     try {
-      const resolvedHouseholdId = currentHouseholdId
-        ?? householdId
-        ?? (await getMockSession()).household.id;
       const cursor = pageCursors[currentPage - 1];
       const [nextOverviewData, nextDetailData] = await Promise.all([
-        getHomeExpenses(resolvedHouseholdId, {
+        getHomeExpenses(householdId, {
           start: activeOverviewRange.start,
           end: activeOverviewRange.end,
           limit: 1,
-        }),
-        getHomeExpenses(resolvedHouseholdId, toApiQuery(currentQuery, cursor)),
+        }, { accessToken }),
+        getHomeExpenses(
+          householdId,
+          toApiQuery(currentQuery, cursor),
+          { accessToken },
+        ),
       ]);
       if (requestId !== requestIdRef.current) return;
 
-      setHouseholdId(resolvedHouseholdId);
       setOverviewData(nextOverviewData);
       setDetailData(nextDetailData);
     } catch (loadError) {
@@ -160,6 +161,7 @@ export function HomeScreen() {
   }, [
     activeOverviewRange.end,
     activeOverviewRange.start,
+    accessToken,
     appliedDetailQuery,
     householdId,
     page,

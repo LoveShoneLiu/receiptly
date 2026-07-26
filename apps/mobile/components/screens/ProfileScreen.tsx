@@ -1,6 +1,16 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-export function ProfileScreen() {
+import type { AuthHousehold, AuthUser } from '../../auth/types';
+
+type ProfileScreenProps = {
+  household: AuthHousehold;
+  onLogout: () => void;
+  user: AuthUser;
+};
+
+export function ProfileScreen({ household, onLogout, user }: ProfileScreenProps) {
+  const avatar = (user.displayName ?? user.email ?? 'R').slice(0, 1).toUpperCase();
+
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <View>
@@ -10,23 +20,23 @@ export function ProfileScreen() {
 
       <View style={styles.profileCard}>
         <View style={styles.profileAvatar}>
-          <Text style={styles.profileAvatarText}>R</Text>
+          <Text style={styles.profileAvatarText}>{avatar}</Text>
         </View>
         <View style={styles.profileIdentity}>
-          <Text style={styles.profileName}>尚未登录</Text>
-          <Text style={styles.profileDetail}>登录后可查看账号和家庭信息</Text>
+          <Text style={styles.profileName}>{user.displayName ?? 'receiptly 用户'}</Text>
+          <Text style={styles.profileDetail}>{user.email ?? 'Apple 私密账号'}</Text>
         </View>
         <Pressable
           accessibilityRole="button"
-          onPress={() => Alert.alert('账号功能', '登录和账号管理将在后续切片中接入。')}
+          onPress={onLogout}
           style={({ pressed }) => [styles.loginButton, pressed && styles.pressed]}
         >
-          <Text style={styles.loginButtonText}>登录</Text>
+          <Text style={styles.loginButtonText}>退出</Text>
         </Pressable>
       </View>
 
       <View style={styles.settingsGroup}>
-        <SettingRow label="家庭成员" value="未加入家庭" />
+        <SettingRow label="当前家庭" value={household.name} />
         <SettingRow label="默认货币" value="NZD" />
         <SettingRow label="隐私与数据" value="›" last />
       </View>

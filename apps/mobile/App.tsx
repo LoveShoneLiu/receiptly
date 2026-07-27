@@ -19,23 +19,30 @@ import { LoginScreen } from './components/screens/LoginScreen';
 import { ProfileScreen } from './components/screens/ProfileScreen';
 import { ReceiptReviewScreen } from './components/screens/ReceiptReviewScreen';
 import type { Tab } from './components/types';
+import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 
 function AppContent() {
   const { logout, restoring, session } = useAuth();
+  const { text } = useLanguage();
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [receiptToReview, setReceiptToReview] = useState<ReceiptScanData | null>(null);
 
   const finishConfirmation = () => {
     setReceiptToReview(null);
     setActiveTab('home');
-    Alert.alert('确认成功', '小票已经计入家庭账本。');
+    Alert.alert(
+      text('确认成功', 'Confirmed'),
+      text('小票已经计入家庭账本。', 'The receipt has been added to your household ledger.'),
+    );
   };
 
   if (restoring) {
     return (
       <View style={styles.restoring}>
         <ActivityIndicator color="#315D49" />
-        <Text style={styles.restoringText}>正在恢复登录状态…</Text>
+        <Text style={styles.restoringText}>
+          {text('正在恢复登录状态…', 'Restoring your session…')}
+        </Text>
       </View>
     );
   }
@@ -92,10 +99,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <StatusBar style="dark" />
-      <AppContent />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <StatusBar style="dark" />
+        <AppContent />
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

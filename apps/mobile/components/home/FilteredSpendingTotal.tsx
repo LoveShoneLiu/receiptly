@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type FilteredSpendingTotalProps = {
   totalCents: number;
@@ -12,11 +13,13 @@ export function FilteredSpendingTotal({
   totalCents,
   lineCount,
 }: FilteredSpendingTotalProps) {
+  const { text } = useLanguage();
+
   return (
     <View style={styles.card}>
       <View>
-        <Text style={styles.label}>筛选结果总消费</Text>
-        <Text style={styles.meta}>{lineCount} 条已确认明细 · 小票总数待接口提供</Text>
+        <Text style={styles.label}>{text('筛选结果总消费', 'Filtered spending')}</Text>
+        <Text style={styles.meta}>{text(`${lineCount} 条已确认明细`, `${lineCount} confirmed items`)}</Text>
       </View>
       <Text style={styles.amount}>NZ {formatCurrency(totalCents)}</Text>
     </View>

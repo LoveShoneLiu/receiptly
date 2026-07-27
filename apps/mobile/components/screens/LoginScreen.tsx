@@ -18,6 +18,7 @@ import {
   verifyEmailCode,
 } from '../../api/auth';
 import { useAuth } from '../../auth/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type EmailMode = 'login' | 'register' | 'code';
 type BusyAction =
@@ -42,6 +43,7 @@ const validateEmail = (email: string) => {
 
 export function LoginScreen() {
   const { acceptSession } = useAuth();
+  const { text } = useLanguage();
   const [busy, setBusy] = useState<BusyAction>(null);
   const [email, setEmail] = useState('');
   const [emailMode, setEmailMode] = useState<EmailMode>('login');
@@ -136,32 +138,37 @@ export function LoginScreen() {
       >
         <View style={styles.brand}>
           <Text style={styles.eyebrow}>RECEIPTLY</Text>
-          <Text style={styles.title}>登录家庭账本</Text>
-          <Text style={styles.subtitle}>你的购物小票和消费记录仅对家庭成员可见。</Text>
+          <Text style={styles.title}>{text('登录家庭账本', 'Sign in to your household')}</Text>
+          <Text style={styles.subtitle}>
+            {text(
+              '你的购物小票和消费记录仅对家庭成员可见。',
+              'Your receipts and spending records are visible only to your household.',
+            )}
+          </Text>
         </View>
 
         <View style={styles.card}>
           <View accessibilityRole="tablist" style={styles.modeSelector}>
             <ModeButton
-              label="密码登录"
+              label={text('密码登录', 'Password')}
               onPress={() => changeEmailMode('login')}
               selected={emailMode === 'login'}
             />
             <ModeButton
-              label="注册账号"
+              label={text('注册账号', 'Register')}
               onPress={() => changeEmailMode('register')}
               selected={emailMode === 'register'}
             />
             <ModeButton
-              label="验证码"
+              label={text('验证码', 'Email code')}
               onPress={() => changeEmailMode('code')}
               selected={emailMode === 'code'}
             />
           </View>
 
-          <Text style={styles.label}>邮箱</Text>
+          <Text style={styles.label}>{text('邮箱', 'Email')}</Text>
           <TextInput
-            accessibilityLabel="邮箱地址"
+            accessibilityLabel={text('邮箱地址', 'Email address')}
             autoCapitalize="none"
             autoComplete="email"
             editable={
@@ -179,20 +186,20 @@ export function LoginScreen() {
 
           {emailMode === 'register' && registrationCodeRequested && (
             <>
-              <Text style={styles.label}>显示名称（可选）</Text>
+              <Text style={styles.label}>{text('显示名称（可选）', 'Display name (optional)')}</Text>
               <TextInput
-                accessibilityLabel="显示名称"
+                accessibilityLabel={text('显示名称', 'Display name')}
                 autoCapitalize="words"
                 maxLength={80}
                 onChangeText={setDisplayName}
-                placeholder="例如：Shaofei Liu"
+                placeholder={text('例如：Shaofei Liu', 'For example: Shaofei Liu')}
                 placeholderTextColor="#95A29B"
                 style={styles.input}
                 value={displayName}
               />
-              <Text style={styles.label}>六位验证码</Text>
+              <Text style={styles.label}>{text('六位验证码', '6-digit verification code')}</Text>
               <TextInput
-                accessibilityLabel="注册邮箱六位验证码"
+                accessibilityLabel={text('注册邮箱六位验证码', 'Registration verification code')}
                 autoComplete="one-time-code"
                 keyboardType="number-pad"
                 maxLength={6}
@@ -208,14 +215,18 @@ export function LoginScreen() {
           {(emailMode === 'login'
             || (emailMode === 'register' && registrationCodeRequested)) && (
             <>
-              <Text style={styles.label}>密码</Text>
+              <Text style={styles.label}>{text('密码', 'Password')}</Text>
               <TextInput
-                accessibilityLabel={emailMode === 'register' ? '设置密码' : '密码'}
+                accessibilityLabel={emailMode === 'register'
+                  ? text('设置密码', 'Create password')
+                  : text('密码', 'Password')}
                 autoCapitalize="none"
                 autoComplete={emailMode === 'register' ? 'new-password' : 'current-password'}
                 onChangeText={setPassword}
                 passwordRules={emailMode === 'register' ? 'minlength: 8;' : undefined}
-                placeholder={emailMode === 'register' ? '至少 8 个字符' : '输入密码'}
+                placeholder={emailMode === 'register'
+                  ? text('至少 8 个字符', 'At least 8 characters')
+                  : text('输入密码', 'Enter password')}
                 placeholderTextColor="#95A29B"
                 secureTextEntry
                 style={styles.input}
@@ -226,29 +237,32 @@ export function LoginScreen() {
 
           {emailMode === 'register' && registrationCodeRequested && (
             <>
-              <Text style={styles.label}>确认密码</Text>
+              <Text style={styles.label}>{text('确认密码', 'Confirm password')}</Text>
               <TextInput
-                accessibilityLabel="确认密码"
+                accessibilityLabel={text('确认密码', 'Confirm password')}
                 autoCapitalize="none"
                 autoComplete="new-password"
                 onChangeText={setPasswordConfirmation}
-                placeholder="再次输入密码"
+                placeholder={text('再次输入密码', 'Enter password again')}
                 placeholderTextColor="#95A29B"
                 secureTextEntry
                 style={styles.input}
                 value={passwordConfirmation}
               />
               <Text style={styles.passwordHint}>
-                至少 8 个字符、UTF-8 最多 72 字节；建议使用不与其他网站重复的密码。
+                {text(
+                  '至少 8 个字符、UTF-8 最多 72 字节；建议使用不与其他网站重复的密码。',
+                  'Use 8–72 UTF-8 bytes and choose a password you do not reuse elsewhere.',
+                )}
               </Text>
             </>
           )}
 
           {emailMode === 'code' && codeRequested && (
             <>
-              <Text style={styles.label}>六位验证码</Text>
+              <Text style={styles.label}>{text('六位验证码', '6-digit verification code')}</Text>
               <TextInput
-                accessibilityLabel="六位邮箱验证码"
+                accessibilityLabel={text('六位邮箱验证码', 'Email verification code')}
                 autoComplete="one-time-code"
                 keyboardType="number-pad"
                 maxLength={6}
@@ -285,14 +299,14 @@ export function LoginScreen() {
               ? <ActivityIndicator color="#1A382D" />
               : <Text style={styles.emailButtonText}>
                 {emailMode === 'login'
-                  ? '登录'
+                  ? text('登录', 'Sign in')
                   : emailMode === 'register'
                     ? registrationCodeRequested
-                      ? '完成注册'
-                      : '发送注册验证码'
+                      ? text('完成注册', 'Create account')
+                      : text('发送注册验证码', 'Send registration code')
                     : codeRequested
-                      ? '验证并登录'
-                      : '发送验证码'}
+                      ? text('验证并登录', 'Verify and sign in')
+                      : text('发送验证码', 'Send code')}
               </Text>}
           </Pressable>
 
@@ -306,7 +320,9 @@ export function LoginScreen() {
                 style={styles.textButton}
               >
                 <Text style={[styles.textButtonLabel, resendSeconds > 0 && styles.muted]}>
-                  {resendSeconds > 0 ? `${resendSeconds} 秒后重新发送` : '重新发送验证码'}
+                  {resendSeconds > 0
+                    ? text(`${resendSeconds} 秒后重新发送`, `Resend in ${resendSeconds}s`)
+                    : text('重新发送验证码', 'Resend code')}
                 </Text>
               </Pressable>
               <Pressable
@@ -319,14 +335,17 @@ export function LoginScreen() {
                 }}
                 style={styles.textButton}
               >
-                <Text style={styles.textButtonLabel}>更换邮箱</Text>
+                <Text style={styles.textButtonLabel}>{text('更换邮箱', 'Change email')}</Text>
               </Pressable>
             </View>
           )}
         </View>
 
         <Text style={styles.privacy}>
-          登录即表示你同意仅将账号资料用于家庭账本、身份验证和数据保护。
+          {text(
+            '登录即表示你同意仅将账号资料用于家庭账本、身份验证和数据保护。',
+            'By signing in, you agree that account data is used only for your household ledger, authentication, and data protection.',
+          )}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -1,5 +1,6 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type FilterSelectProps = {
   label: string;
@@ -9,6 +10,7 @@ type FilterSelectProps = {
 };
 
 export function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
+  const { text } = useLanguage();
   const [open, setOpen] = useState(false);
 
   const selectOption = (option: string) => {
@@ -19,7 +21,7 @@ export function FilterSelect({ label, value, options, onChange }: FilterSelectPr
   return (
     <>
       <Pressable
-        accessibilityHint={`打开${label}选项`}
+        accessibilityHint={text(`打开${label}选项`, `Open ${label} options`)}
         accessibilityRole="button"
         onPress={() => setOpen(true)}
         style={({ pressed }) => [styles.field, pressed && styles.pressed]}
@@ -33,13 +35,13 @@ export function FilterSelect({ label, value, options, onChange }: FilterSelectPr
 
       <Modal animationType="slide" onRequestClose={() => setOpen(false)} transparent visible={open}>
         <View style={styles.modalRoot}>
-          <Pressable accessibilityLabel={`关闭${label}选项`} onPress={() => setOpen(false)} style={styles.backdrop} />
+          <Pressable accessibilityLabel={text(`关闭${label}选项`, `Close ${label} options`)} onPress={() => setOpen(false)} style={styles.backdrop} />
           <View style={styles.sheet}>
             <View style={styles.sheetHandle} />
             <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>选择{label}</Text>
+              <Text style={styles.sheetTitle}>{text(`选择${label}`, `Choose ${label}`)}</Text>
               <Pressable accessibilityRole="button" onPress={() => setOpen(false)} style={styles.closeButton}>
-                <Text style={styles.closeText}>关闭</Text>
+                <Text style={styles.closeText}>{text('关闭', 'Close')}</Text>
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={styles.optionList}>

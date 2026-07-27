@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { AuthHousehold, AuthUser } from '../../auth/types';
+import { useLanguage } from '../../i18n/LanguageContext';
 import { HouseholdMembersScreen } from './HouseholdMembersScreen';
 
 type ProfileScreenProps = {
@@ -18,6 +19,7 @@ export function ProfileScreen({
   user,
 }: ProfileScreenProps) {
   const [showMembers, setShowMembers] = useState(false);
+  const { language, setLanguage, text } = useLanguage();
   const avatar = (user.displayName ?? user.email ?? 'R').slice(0, 1).toUpperCase();
 
   if (showMembers) {
@@ -34,8 +36,8 @@ export function ProfileScreen({
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <View>
-        <Text style={styles.eyebrow}>个人中心</Text>
-        <Text style={styles.title}>我的</Text>
+        <Text style={styles.eyebrow}>{text('个人中心', 'ACCOUNT')}</Text>
+        <Text style={styles.title}>{text('我的', 'Profile')}</Text>
       </View>
 
       <View style={styles.profileCard}>
@@ -43,35 +45,85 @@ export function ProfileScreen({
           <Text style={styles.profileAvatarText}>{avatar}</Text>
         </View>
         <View style={styles.profileIdentity}>
-          <Text style={styles.profileName}>{user.displayName ?? 'receiptly 用户'}</Text>
-          <Text style={styles.profileDetail}>{user.email ?? 'Apple 私密账号'}</Text>
+          <Text style={styles.profileName}>
+            {user.displayName ?? text('Receiptly 用户', 'Receiptly user')}
+          </Text>
+          <Text style={styles.profileDetail}>
+            {user.email ?? text('Apple 私密账号', 'Private Apple account')}
+          </Text>
         </View>
         <Pressable
           accessibilityRole="button"
           onPress={onLogout}
           style={({ pressed }) => [styles.loginButton, pressed && styles.pressed]}
         >
-          <Text style={styles.loginButtonText}>退出</Text>
+          <Text style={styles.loginButtonText}>{text('退出', 'Log out')}</Text>
         </Pressable>
       </View>
 
       <View style={styles.settingsGroup}>
-        <SettingRow label="当前家庭" value={household.name} />
+        <SettingRow label={text('当前家庭', 'Current household')} value={household.name} />
         <SettingRow
-          label="家庭成员"
+          label={text('家庭成员', 'Household members')}
           onPress={() => setShowMembers(true)}
-          value={household.role === 'owner' ? '管理 ›' : '查看 ›'}
+          value={household.role === 'owner'
+            ? text('管理 ›', 'Manage ›')
+            : text('查看 ›', 'View ›')}
         />
-        <SettingRow label="我的角色" value={household.role === 'owner' ? '管理员' : '成员'} />
-        <SettingRow label="默认货币" value={household.currency ?? 'NZD'} />
-        <SettingRow label="隐私与数据" value="›" last />
+        <SettingRow
+          label={text('我的角色', 'My role')}
+          value={household.role === 'owner' ? text('管理员', 'Owner') : text('成员', 'Member')}
+        />
+        <SettingRow label={text('默认货币', 'Default currency')} value={household.currency ?? 'NZD'} />
+        <View style={styles.languageRow}>
+          <Text style={styles.settingLabel}>{text('语言', 'Language')}</Text>
+          <View accessibilityRole="tablist" style={styles.languageSelector}>
+            <LanguageButton
+              label="中文"
+              onPress={() => void setLanguage('zh')}
+              selected={language === 'zh'}
+            />
+            <LanguageButton
+              label="English"
+              onPress={() => void setLanguage('en')}
+              selected={language === 'en'}
+            />
+          </View>
+        </View>
+        <SettingRow label={text('隐私与数据', 'Privacy & data')} value="›" last />
       </View>
 
       <View style={styles.notice}>
-        <Text style={styles.noticeTitle}>隐私优先</Text>
-        <Text style={styles.noticeText}>小票和消费记录仅供你的家庭使用，不会公开展示或用于广告。</Text>
+        <Text style={styles.noticeTitle}>{text('隐私优先', 'Privacy first')}</Text>
+        <Text style={styles.noticeText}>
+          {text(
+            '小票和消费记录仅供你的家庭使用，不会公开展示或用于广告。',
+            'Receipts and spending records are private to your household and are never used for advertising.',
+          )}
+        </Text>
       </View>
     </ScrollView>
+  );
+}
+
+function LanguageButton({
+  label,
+  onPress,
+  selected,
+}: {
+  label: string;
+  onPress: () => void;
+  selected: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={[styles.languageButton, selected && styles.languageButtonSelected]}
+    >
+      <Text style={[styles.languageText, selected && styles.languageTextSelected]}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -128,6 +180,19 @@ const styles = StyleSheet.create({
   settingRowLast: { borderBottomWidth: 0 },
   settingLabel: { color: '#30483E', fontSize: 15 },
   settingValue: { color: '#71847B', fontSize: 14 },
+  languageRow: {
+    alignItems: 'center',
+    borderBottomColor: '#E9ECE7',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 66,
+  },
+  languageSelector: { backgroundColor: '#EDF2ED', borderRadius: 10, flexDirection: 'row', padding: 3 },
+  languageButton: { borderRadius: 8, justifyContent: 'center', minHeight: 36, paddingHorizontal: 10 },
+  languageButtonSelected: { backgroundColor: '#FFFFFF' },
+  languageText: { color: '#71847B', fontSize: 11, fontWeight: '700' },
+  languageTextSelected: { color: '#315D49' },
   notice: { backgroundColor: '#EDF2E7', borderRadius: 16, padding: 18 },
   noticeTitle: { color: '#315D49', fontSize: 15, fontWeight: '700' },
   noticeText: { color: '#496157', fontSize: 14, lineHeight: 20, marginTop: 6 },

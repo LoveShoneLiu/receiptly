@@ -1,6 +1,7 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { HomeExpense } from '../../api/homeExpenses';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type ExpenseListProps = {
   expenses: HomeExpense[];
@@ -26,9 +27,9 @@ const formatUnitPrice = (expense: HomeExpense) =>
     ? `${formatCurrency(expense.unitPriceCents)}/${expense.unit}`
     : '—';
 
-const formatDate = (value: string) => {
+const formatDate = (value: string, locale: string) => {
   const date = new Date(`${value}T00:00:00`);
-  return new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' }).format(date);
+  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(date);
 };
 
 export function ExpenseList({
@@ -43,37 +44,38 @@ export function ExpenseList({
   onPreviousPage,
   onResetFilters,
 }: ExpenseListProps) {
+  const { text } = useLanguage();
   const totalPages = Math.max(1, Math.ceil(totalLineCount / pageSize));
 
   return (
     <View style={styles.section}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>支出明细</Text>
-          <Text style={styles.subtitle}>{totalLineCount} 条已确认记录 · 每页 {pageSize} 条</Text>
+          <Text style={styles.title}>{text('支出明细', 'Expenses')}</Text>
+          <Text style={styles.subtitle}>{text(`${totalLineCount} 条已确认记录 · 每页 ${pageSize} 条`, `${totalLineCount} confirmed · ${pageSize} per page`)}</Text>
         </View>
         <View style={styles.sortBadge}>
-          <Text style={styles.sortText}>最新优先</Text>
+          <Text style={styles.sortText}>{text('最新优先', 'Newest first')}</Text>
         </View>
       </View>
 
       {loadingPage !== null && (
         <View accessibilityLiveRegion="polite" style={styles.pageLoading}>
-          <Text style={styles.pageLoadingText}>正在加载第 {loadingPage} 页…</Text>
+          <Text style={styles.pageLoadingText}>{text(`正在加载第 ${loadingPage} 页…`, `Loading page ${loadingPage}…`)}</Text>
         </View>
       )}
 
       {expenses.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyIcon}>⌕</Text>
-          <Text style={styles.emptyTitle}>没有符合条件的支出</Text>
-          <Text style={styles.emptyText}>尝试调整时间范围，或清除门店、小票和商品名筛选。</Text>
+          <Text style={styles.emptyTitle}>{text('没有符合条件的支出', 'No matching expenses')}</Text>
+          <Text style={styles.emptyText}>{text('尝试调整时间范围，或清除门店、小票和商品名筛选。', 'Try another date range or clear the store, receipt and product filters.')}</Text>
           <Pressable
             accessibilityRole="button"
             onPress={onResetFilters}
             style={({ pressed }) => [styles.emptyButton, pressed && styles.pressed]}
           >
-            <Text style={styles.emptyButtonText}>清除筛选</Text>
+            <Text style={styles.emptyButtonText}>{text('清除筛选', 'Clear filters')}</Text>
           </Pressable>
         </View>
       ) : (
@@ -88,15 +90,15 @@ export function ExpenseList({
         <View style={styles.pagination}>
           <PageButton
             disabled={page <= 1 || loading}
-            label="上一页"
+            label={text('上一页', 'Previous')}
             onPress={onPreviousPage}
           />
           <View style={styles.pageIndicator}>
-            <Text style={styles.pageIndicatorText}>{page} / {totalPages} 页</Text>
+            <Text style={styles.pageIndicatorText}>{text(`${page} / ${totalPages} 页`, `${page} / ${totalPages}`)}</Text>
           </View>
           <PageButton
             disabled={!hasMore || loading}
-            label="下一页"
+            label={text('下一页', 'Next')}
             onPress={onNextPage}
           />
         </View>
@@ -106,17 +108,21 @@ export function ExpenseList({
 }
 
 function ExpenseRow({ expense }: { expense: HomeExpense }) {
-  const store = expense.store ?? '未确认门店';
-  const productName = expense.productName ?? '未命名商品';
-  const receiptNumber = expense.receiptNumber ?? '未提供';
+  const { locale, text } = useLanguage();
+  const store = expense.store ?? text('未确认门店', 'Unconfirmed store');
+  const productName = expense.productName ?? text('未命名商品', 'Unnamed product');
+  const receiptNumber = expense.receiptNumber ?? text('未提供', 'Not provided');
 
   return (
     <Pressable
-      accessibilityHint="打开这笔支出的组成明细"
+      accessibilityHint={text('打开这笔支出的组成明细', 'Open expense details')}
       accessibilityRole="button"
       onPress={() => Alert.alert(
         `${productName} · ${formatCurrency(expense.amountCents)}`,
-        `门店 ${store}\n小票编号 ${receiptNumber}\n单位 ${formatQuantity(expense)}\n单价 ${formatUnitPrice(expense)}\n购买日期 ${expense.purchasedOn}\n状态：已确认`,
+        text(
+          `门店 ${store}\n小票编号 ${receiptNumber}\n单位 ${formatQuantity(expense)}\n单价 ${formatUnitPrice(expense)}\n购买日期 ${expense.purchasedOn}\n状态：已确认`,
+          `Store ${store}\nReceipt ${receiptNumber}\nQuantity ${formatQuantity(expense)}\nUnit price ${formatUnitPrice(expense)}\nPurchased ${expense.purchasedOn}\nStatus: Confirmed`,
+        ),
       )}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
@@ -126,26 +132,26 @@ function ExpenseRow({ expense }: { expense: HomeExpense }) {
       <View style={styles.rowContent}>
         <View style={styles.rowTop}>
           <Text numberOfLines={1} style={styles.productName}>{productName}</Text>
-          <Text style={styles.price}>实付 {formatCurrency(expense.amountCents)}</Text>
+          <Text style={styles.price}>{text('实付', 'Paid')} {formatCurrency(expense.amountCents)}</Text>
         </View>
         <View style={styles.rowMiddle}>
           <Text numberOfLines={1} style={styles.storeName}>{store}</Text>
-          <Text style={styles.date}>{formatDate(expense.purchasedOn)}</Text>
+          <Text style={styles.date}>{formatDate(expense.purchasedOn, locale)}</Text>
         </View>
         <View style={styles.priceDetails}>
           <View style={styles.detailBadge}>
-            <Text style={styles.detailLabel}>单位</Text>
+            <Text style={styles.detailLabel}>{text('单位', 'Qty')}</Text>
             <Text style={styles.detailValue}>{formatQuantity(expense)}</Text>
           </View>
           <View style={styles.detailBadge}>
-            <Text style={styles.detailLabel}>单价</Text>
+            <Text style={styles.detailLabel}>{text('单价', 'Unit')}</Text>
             <Text style={styles.detailValue}>{formatUnitPrice(expense)}</Text>
           </View>
         </View>
         <View style={styles.rowBottom}>
-          <Text style={styles.receipt}>小票 {receiptNumber}</Text>
+          <Text style={styles.receipt}>{text('小票', 'Receipt')} {receiptNumber}</Text>
           <View style={styles.confirmed}>
-            <Text style={styles.confirmedText}>已确认</Text>
+            <Text style={styles.confirmedText}>{text('已确认', 'Confirmed')}</Text>
           </View>
         </View>
       </View>

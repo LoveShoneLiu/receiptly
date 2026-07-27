@@ -32,6 +32,7 @@ import type {
   OverviewPeriodPreset,
   PeriodPreset,
 } from '../home/types';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 const PAGE_SIZE = 20;
 
@@ -61,6 +62,7 @@ type HomeScreenProps = {
 };
 
 export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
+  const { locale, text } = useLanguage();
   const [overviewPeriod, setOverviewPeriod] = useState<OverviewPeriodPreset>('month');
   const [overviewData, setOverviewData] = useState<HomeExpensesData | null>(null);
 
@@ -252,7 +254,7 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
   };
 
   const updatedAt = overviewData
-    ? new Intl.DateTimeFormat('zh-CN', {
+    ? new Intl.DateTimeFormat(locale, {
       hour: '2-digit',
       minute: '2-digit',
       month: 'numeric',
@@ -274,13 +276,21 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
       <View style={styles.header}>
         <View style={styles.heading}>
           <Text style={styles.eyebrow}>RECEIPTLY</Text>
-          <Text style={styles.title}>家庭账单</Text>
-          <Text style={styles.subtitle}>看清每一笔已确认的家庭支出</Text>
+          <Text style={styles.title}>{text('家庭账单', 'Household ledger')}</Text>
+          <Text style={styles.subtitle}>
+            {text('看清每一笔已确认的家庭支出', 'See every confirmed household expense')}
+          </Text>
         </View>
         <Pressable
-          accessibilityLabel="账单工具"
+          accessibilityLabel={text('账单工具', 'Ledger tools')}
           accessibilityRole="button"
-          onPress={() => Alert.alert('账单工具', '导出、分类管理和账单设置将在后续版本接入。')}
+          onPress={() => Alert.alert(
+            text('账单工具', 'Ledger tools'),
+            text(
+              '导出、分类管理和账单设置将在后续版本接入。',
+              'Export, category management, and ledger settings are coming later.',
+            ),
+          )}
           style={({ pressed }) => [styles.toolButton, pressed && styles.pressed]}
         >
           <Text style={styles.toolIcon}>⚙︎</Text>
@@ -290,7 +300,9 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
       {error && (
         <View accessibilityRole="alert" style={styles.errorCard}>
           <View style={styles.errorCopy}>
-            <Text style={styles.errorTitle}>家庭账本加载失败</Text>
+            <Text style={styles.errorTitle}>
+              {text('家庭账本加载失败', 'Could not load household ledger')}
+            </Text>
             <Text style={styles.errorText}>{error}</Text>
           </View>
           <Pressable
@@ -298,7 +310,7 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
             onPress={() => void loadData()}
             style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}
           >
-            <Text style={styles.retryText}>重试</Text>
+            <Text style={styles.retryText}>{text('重试', 'Retry')}</Text>
           </Pressable>
         </View>
       )}
@@ -314,8 +326,10 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
 
       <View style={styles.detailsHeading}>
         <View>
-          <Text style={styles.detailsTitle}>支出详情</Text>
-          <Text style={styles.detailsSubtitle}>筛选结果只包含已确认小票</Text>
+          <Text style={styles.detailsTitle}>{text('支出详情', 'Expense details')}</Text>
+          <Text style={styles.detailsSubtitle}>
+            {text('筛选结果只包含已确认小票', 'Results include confirmed receipts only')}
+          </Text>
         </View>
       </View>
 
@@ -364,7 +378,10 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
       />
 
       <Text style={styles.dataBoundary}>
-        数据边界：仅展示本家庭已确认小票记录，不代表零售商当前价格或市场价格。
+        {text(
+          '数据边界：仅展示本家庭已确认小票记录，不代表零售商当前价格或市场价格。',
+          'Data boundary: confirmed household receipts only. These are not current retailer or market prices.',
+        )}
       </Text>
     </ScrollView>
   );

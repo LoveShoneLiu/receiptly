@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 
 import type { DateRange, OverviewPeriodPreset } from './types';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type SpendingSummaryProps = {
   loading: boolean;
@@ -36,10 +37,20 @@ export function SpendingSummary({
   totalCents,
   updatedAt,
 }: SpendingSummaryProps) {
+  const { text } = useLanguage();
+  const localizedPeriods = periods.map((item) => ({
+    ...item,
+    label: item.value === 'week'
+      ? text('本周', 'Week')
+      : item.value === 'month'
+        ? text('本月', 'Month')
+        : text('本年', 'Year'),
+  }));
+
   return (
     <View style={styles.card}>
       <View accessibilityRole="tablist" style={styles.periodTrack}>
-        {periods.map((item) => {
+        {localizedPeriods.map((item) => {
           const selected = period === item.value;
           return (
             <Pressable
@@ -70,7 +81,7 @@ export function SpendingSummary({
 
       <View style={styles.cardTop}>
         <View style={styles.summaryCopy}>
-          <Text style={styles.label}>已确认支出</Text>
+          <Text style={styles.label}>{text('已确认支出', 'Confirmed spending')}</Text>
           <View style={styles.amountRow}>
             <Text
               adjustsFontSizeToFit
@@ -81,18 +92,22 @@ export function SpendingSummary({
             </Text>
             {loading && (
               <ActivityIndicator
-                accessibilityLabel="正在更新支出金额"
+                accessibilityLabel={text('正在更新支出金额', 'Updating spending total')}
                 color="#B8C5BD"
                 size="small"
                 style={styles.amountSpinner}
               />
             )}
           </View>
-          <Text style={styles.updatedAt}>{updatedAt ? `数据更新于 ${updatedAt}` : '正在读取家庭账本'}</Text>
+          <Text style={styles.updatedAt}>
+            {updatedAt
+              ? text(`数据更新于 ${updatedAt}`, `Updated ${updatedAt}`)
+              : text('正在读取家庭账本', 'Loading household ledger')}
+          </Text>
         </View>
         <View style={styles.confirmedBadge}>
           <Text style={styles.confirmedDot}>●</Text>
-          <Text style={styles.confirmedText}>仅已确认</Text>
+          <Text style={styles.confirmedText}>{text('仅已确认', 'Confirmed only')}</Text>
         </View>
       </View>
 

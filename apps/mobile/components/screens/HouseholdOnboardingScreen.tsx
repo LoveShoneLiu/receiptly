@@ -17,14 +17,15 @@ import {
   type HouseholdInvitationPreview,
 } from '../../api/households';
 import { useAuth } from '../../auth/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type OnboardingMode = 'create' | 'join';
 
-const formatExpiry = (value: string) => {
+const formatExpiry = (value: string, locale: string) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? value
-    : new Intl.DateTimeFormat('zh-CN', {
+    : new Intl.DateTimeFormat(locale, {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
@@ -33,6 +34,7 @@ const formatExpiry = (value: string) => {
 };
 
 export function HouseholdOnboardingScreen() {
+  const { locale, text } = useLanguage();
   const {
     acceptHouseholdInvitation,
     createHousehold,
@@ -56,7 +58,7 @@ export function HouseholdOnboardingScreen() {
   const submitHousehold = async () => {
     const normalizedName = name.trim();
     if (!normalizedName) {
-      setError('请输入家庭名称。');
+      setError(text('请输入家庭名称。', 'Enter a household name.'));
       return;
     }
 
@@ -65,7 +67,7 @@ export function HouseholdOnboardingScreen() {
     try {
       await createHousehold(normalizedName);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : '创建家庭失败，请重试。');
+      setError(nextError instanceof Error ? nextError.message : text('创建家庭失败，请重试。', 'Could not create the household. Try again.'));
     } finally {
       setBusy(null);
     }
@@ -74,11 +76,11 @@ export function HouseholdOnboardingScreen() {
   const previewInvitation = async () => {
     const code = normalizeInvitationCode(invitationCode);
     if (code.length < 6) {
-      setError('请输入邮件中的 6–8 位邀请码。');
+      setError(text('请输入邮件中的 6–8 位邀请码。', 'Enter the 6–8 character code from your email.'));
       return;
     }
     if (!session) {
-      setError('登录状态已失效，请重新登录。');
+      setError(text('登录状态已失效，请重新登录。', 'Your session has expired. Sign in again.'));
       return;
     }
 
@@ -90,7 +92,7 @@ export function HouseholdOnboardingScreen() {
       setInvitationCode(code);
       setInvitation(result);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : '无法查询邀请，请稍后重试。');
+      setError(nextError instanceof Error ? nextError.message : text('无法查询邀请，请稍后重试。', 'Could not find the invitation. Try again later.'));
     } finally {
       setBusy(null);
     }
@@ -103,7 +105,7 @@ export function HouseholdOnboardingScreen() {
     try {
       await acceptHouseholdInvitation(invitationCode);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : '加入家庭失败，请稍后重试。');
+      setError(nextError instanceof Error ? nextError.message : text('加入家庭失败，请稍后重试。', 'Could not join the household. Try again later.'));
       setBusy(null);
     }
   };
@@ -118,20 +120,23 @@ export function HouseholdOnboardingScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.card}>
-          <Text style={styles.eyebrow}>首次设置</Text>
-          <Text style={styles.title}>设置家庭账本</Text>
+          <Text style={styles.eyebrow}>{text('首次设置', 'GET STARTED')}</Text>
+          <Text style={styles.title}>{text('设置家庭账本', 'Set up your household')}</Text>
           <Text style={styles.subtitle}>
-            登录成功，{session?.user.displayName ?? session?.user.email ?? '欢迎你'}。创建一个家庭，或使用邮件中的邀请码加入。
+            {text(
+              `登录成功，${session?.user.displayName ?? session?.user.email ?? '欢迎你'}。创建一个家庭，或使用邮件中的邀请码加入。`,
+              `Welcome, ${session?.user.displayName ?? session?.user.email ?? 'there'}. Create a household or join one with an invitation code.`,
+            )}
           </Text>
 
           <View accessibilityRole="tablist" style={styles.modeSelector}>
             <ModeButton
-              label="创建家庭"
+              label={text('创建家庭', 'Create')}
               onPress={() => changeMode('create')}
               selected={mode === 'create'}
             />
             <ModeButton
-              label="加入家庭"
+              label={text('加入家庭', 'Join')}
               onPress={() => changeMode('join')}
               selected={mode === 'join'}
             />
@@ -139,9 +144,9 @@ export function HouseholdOnboardingScreen() {
 
           {mode === 'create' ? (
             <>
-              <Text style={styles.label}>家庭名称</Text>
+              <Text style={styles.label}>{text('家庭名称', 'Household name')}</Text>
               <TextInput
-                accessibilityLabel="家庭名称"
+                accessibilityLabel={text('家庭名称', 'Household name')}
                 autoCapitalize="words"
                 editable={!busy}
                 maxLength={80}
@@ -163,14 +168,14 @@ export function HouseholdOnboardingScreen() {
               >
                 {busy === 'create'
                   ? <ActivityIndicator color="#1A382D" />
-                  : <Text style={styles.primaryText}>创建并进入账本</Text>}
+                  : <Text style={styles.primaryText}>{text('创建并进入账本', 'Create household')}</Text>}
               </Pressable>
             </>
           ) : (
             <>
-              <Text style={styles.label}>家庭邀请码</Text>
+              <Text style={styles.label}>{text('家庭邀请码', 'Invitation code')}</Text>
               <TextInput
-                accessibilityLabel="家庭邀请码"
+                accessibilityLabel={text('家庭邀请码', 'Invitation code')}
                 autoCapitalize="characters"
                 autoCorrect={false}
                 editable={!busy && !invitation}
@@ -187,18 +192,18 @@ export function HouseholdOnboardingScreen() {
 
               {invitation ? (
                 <View style={styles.invitationCard}>
-                  <Text style={styles.invitationEyebrow}>邀请有效</Text>
+                  <Text style={styles.invitationEyebrow}>{text('邀请有效', 'Valid invitation')}</Text>
                   <Text style={styles.invitationTitle}>{invitation.household.name}</Text>
-                  <Text style={styles.invitationText}>受邀邮箱：{invitation.invitedEmail}</Text>
+                  <Text style={styles.invitationText}>{text('受邀邮箱', 'Invited email')}: {invitation.invitedEmail}</Text>
                   <Text style={styles.invitationText}>
-                    有效期至：{formatExpiry(invitation.expiresAt)}
+                    {text('有效期至', 'Expires')}: {formatExpiry(invitation.expiresAt, locale)}
                   </Text>
                   <Text style={styles.invitationNotice}>
-                    同意后，你扫描并确认的小票会进入这个家庭账本。
+                    {text('同意后，你扫描并确认的小票会进入这个家庭账本。', 'After joining, receipts you scan and confirm will be added to this household.')}
                   </Text>
                 </View>
               ) : (
-                <Text style={styles.helpText}>输入邀请邮件中的代码，确认家庭后再决定是否加入。</Text>
+                <Text style={styles.helpText}>{text('输入邀请邮件中的代码，确认家庭后再决定是否加入。', 'Enter the code from your invitation email to preview the household before joining.')}</Text>
               )}
 
               <Pressable
@@ -215,7 +220,7 @@ export function HouseholdOnboardingScreen() {
                   ? <ActivityIndicator color="#1A382D" />
                   : (
                     <Text style={styles.primaryText}>
-                      {invitation ? '同意加入家庭' : '查看邀请'}
+                      {invitation ? text('同意加入家庭', 'Join household') : text('查看邀请', 'Preview invitation')}
                     </Text>
                   )}
               </Pressable>

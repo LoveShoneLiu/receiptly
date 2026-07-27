@@ -1,19 +1,21 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Tab } from './types';
+import { useLanguage } from '../i18n/LanguageContext';
 
 type BottomNavigationProps = {
   activeTab: Tab;
   onChange: (tab: Tab) => void;
 };
 
-const items: { icon: string; label: string; tab: Tab }[] = [
-  { icon: '⌂', label: '首页', tab: 'home' },
-  { icon: '＋', label: '添加小票', tab: 'add' },
-  { icon: '●', label: '我的', tab: 'profile' },
-];
-
 export function BottomNavigation({ activeTab, onChange }: BottomNavigationProps) {
+  const { text } = useLanguage();
+  const items: { icon: string; label: string; tab: Tab }[] = [
+    { icon: '⌂', label: text('首页', 'Home'), tab: 'home' },
+    { icon: '＋', label: text('添加小票', 'Add receipt'), tab: 'add' },
+    { icon: '●', label: text('我的', 'Profile'), tab: 'profile' },
+  ];
+
   return (
     <View accessibilityRole="tablist" style={styles.container}>
       {items.map((item) => {

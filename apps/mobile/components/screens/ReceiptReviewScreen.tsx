@@ -27,6 +27,7 @@ import {
   ReceiptLineEditor,
   type EditableReceiptLine,
 } from '../receipt/ReceiptLineEditor';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type ReceiptReviewScreenProps = {
   accessToken: string;
@@ -65,6 +66,7 @@ export function ReceiptReviewScreen({
   onBack,
   onConfirmed,
 }: ReceiptReviewScreenProps) {
+  const { text } = useLanguage();
   const [receipt, setReceipt] = useState<ReceiptHeaderDraft>({
     declaredTotalInput: centsToInput(initialData.receipt.declaredTotalCents),
     purchasedAtLocal: initialData.receipt.purchasedAtLocal,
@@ -179,7 +181,7 @@ export function ReceiptReviewScreen({
     } catch (error) {
       setConfirmError(error instanceof ReceiptApiError
         ? error.message
-        : '确认失败，请稍后重试。');
+        : text('确认失败，请稍后重试。', 'Confirmation failed. Try again later.'));
     } finally {
       setIsConfirming(false);
     }
@@ -189,7 +191,7 @@ export function ReceiptReviewScreen({
     <View style={styles.screen}>
       <View style={styles.navigation}>
         <Pressable
-          accessibilityLabel="返回添加小票"
+          accessibilityLabel={text('返回添加小票', 'Back to add receipt')}
           accessibilityRole="button"
           onPress={onBack}
           style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
@@ -197,16 +199,16 @@ export function ReceiptReviewScreen({
           <Text style={styles.backIcon}>‹</Text>
         </Pressable>
         <View style={styles.navigationCopy}>
-          <Text style={styles.navigationTitle}>检查扫描结果</Text>
-          <Text style={styles.navigationSubtitle}>确认入账前请逐项核对候选内容</Text>
+          <Text style={styles.navigationTitle}>{text('检查扫描结果', 'Review scan')}</Text>
+          <Text style={styles.navigationSubtitle}>{text('确认入账前请逐项核对候选内容', 'Check every suggested item before confirming')}</Text>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.candidateNotice}>
-          <Text style={styles.candidateNoticeTitle}>确认后将正式入账</Text>
+          <Text style={styles.candidateNoticeTitle}>{text('确认后将正式入账', 'Confirmation adds this to your ledger')}</Text>
           <Text style={styles.candidateNoticeText}>
-            请先检查门店、日期、总额和每一条商品内容。
+            {text('请先检查门店、日期、总额和每一条商品内容。', 'Check the store, date, total and every product first.')}
           </Text>
         </View>
 
@@ -214,22 +216,22 @@ export function ReceiptReviewScreen({
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>商品明细</Text>
-            <Text style={styles.sectionSubtitle}>{lines.length} 条候选商品行</Text>
+            <Text style={styles.sectionTitle}>{text('商品明细', 'Items')}</Text>
+            <Text style={styles.sectionSubtitle}>{text(`${lines.length} 条候选商品行`, `${lines.length} suggested items`)}</Text>
           </View>
           <Pressable
             accessibilityRole="button"
             onPress={() => setLines((current) => [...current, createEmptyLine()])}
             style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
           >
-            <Text style={styles.addButtonText}>＋ 添加商品</Text>
+            <Text style={styles.addButtonText}>＋ {text('添加商品', 'Add item')}</Text>
           </Pressable>
         </View>
 
         {lines.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>没有商品行</Text>
-            <Text style={styles.emptyText}>可以手动添加商品，继续完成这张小票。</Text>
+            <Text style={styles.emptyTitle}>{text('没有商品行', 'No items')}</Text>
+            <Text style={styles.emptyText}>{text('可以手动添加商品，继续完成这张小票。', 'Add items manually to complete this receipt.')}</Text>
           </View>
         ) : (
           lines.map((line, index) => (
@@ -248,37 +250,37 @@ export function ReceiptReviewScreen({
           reconciliation.isBalanced ? styles.reconciliationBalanced : styles.reconciliationWarning,
         ]}>
           <View style={styles.reconciliationRow}>
-            <Text style={styles.reconciliationLabel}>计入商品合计</Text>
+            <Text style={styles.reconciliationLabel}>{text('计入商品合计', 'Included item total')}</Text>
             <Text style={styles.reconciliationValue}>
               {formatCurrency(reconciliation.lineTotalCents)}
             </Text>
           </View>
           <View style={styles.reconciliationRow}>
-            <Text style={styles.reconciliationLabel}>与小票总额差异</Text>
+            <Text style={styles.reconciliationLabel}>{text('与小票总额差异', 'Difference from receipt total')}</Text>
             <Text style={styles.reconciliationValue}>
               {reconciliation.differenceCents === null
-                ? '待填写'
+                ? text('待填写', 'Required')
                 : formatCurrency(Math.abs(reconciliation.differenceCents))}
             </Text>
           </View>
           <Text style={styles.reconciliationHint}>
             {reconciliation.isBalanced
               ? reconciliation.hasMissingRequiredFields
-                ? '金额一致，但仍有必填内容需要补充。'
-                : '金额一致，可以确认并计入家庭账本。'
-              : '金额尚未一致，处理差异后才能确认入账。'}
+                ? text('金额一致，但仍有必填内容需要补充。', 'The totals match, but required details are still missing.')
+                : text('金额一致，可以确认并计入家庭账本。', 'The totals match. You can confirm this receipt.')
+              : text('金额尚未一致，处理差异后才能确认入账。', 'The totals do not match. Resolve the difference before confirming.')}
           </Text>
         </View>
 
         {confirmError && (
           <View accessibilityRole="alert" style={styles.confirmError}>
-            <Text style={styles.confirmErrorTitle}>未能确认入账</Text>
+            <Text style={styles.confirmErrorTitle}>{text('未能确认入账', 'Could not confirm receipt')}</Text>
             <Text style={styles.confirmErrorText}>{confirmError}</Text>
           </View>
         )}
 
         <Pressable
-          accessibilityHint="确认这张小票并计入正式账本"
+          accessibilityHint={text('确认这张小票并计入正式账本', 'Confirm this receipt and add it to the household ledger')}
           accessibilityRole="button"
           disabled={!canConfirm || isConfirming}
           onPress={confirmScannedReceipt}
@@ -290,7 +292,7 @@ export function ReceiptReviewScreen({
         >
           {isConfirming
             ? <ActivityIndicator color="#1A382D" size="small" />
-            : <Text style={styles.saveButtonText}>确认</Text>}
+            : <Text style={styles.saveButtonText}>{text('确认', 'Confirm')}</Text>}
         </Pressable>
       </ScrollView>
     </View>

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { DateRange, PeriodPreset } from './types';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type PeriodSelectorProps = {
   value: PeriodPreset;
@@ -20,10 +21,20 @@ const formatDate = (value: string) => {
 };
 
 export function PeriodSelector({ value, range, onChange }: PeriodSelectorProps) {
+  const { text } = useLanguage();
+  const localizedPresets = presets.map((preset) => ({
+    ...preset,
+    label: preset.value === 'week'
+      ? text('本周', 'Week')
+      : preset.value === 'month'
+        ? text('本月', 'Month')
+        : text('自定义', 'Custom'),
+  }));
+
   return (
     <View>
       <View accessibilityRole="tablist" style={styles.track}>
-        {presets.map((preset) => {
+        {localizedPresets.map((preset) => {
           const selected = value === preset.value;
 
           return (

@@ -10,6 +10,7 @@ import { CustomDateRange } from './CustomDateRange';
 import { FilterSelect } from './FilterSelect';
 import { PeriodSelector } from './PeriodSelector';
 import type { DateRange, ExpenseFilters, PeriodPreset } from './types';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type ExpenseFiltersPanelProps = {
   period: PeriodPreset;
@@ -46,27 +47,29 @@ export function ExpenseFiltersPanel({
   onApply,
   onReset,
 }: ExpenseFiltersPanelProps) {
+  const { text } = useLanguage();
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
           <View style={styles.titleRow}>
-            <Text style={styles.title}>筛选条件</Text>
+            <Text style={styles.title}>{text('筛选条件', 'Filters')}</Text>
             {hasPendingChanges && (
               <View style={styles.pendingBadge}>
-                <Text style={styles.pendingText}>待应用</Text>
+                <Text style={styles.pendingText}>{text('待应用', 'Pending')}</Text>
               </View>
             )}
           </View>
-          <Text style={styles.subtitle}>选择条件后点击确定更新结果</Text>
+          <Text style={styles.subtitle}>{text('选择条件后点击确定更新结果', 'Choose filters, then apply to update results')}</Text>
         </View>
         <Pressable accessibilityRole="button" onPress={onReset} style={styles.resetButton}>
-          <Text style={styles.resetText}>重置</Text>
+          <Text style={styles.resetText}>{text('重置', 'Reset')}</Text>
         </Pressable>
       </View>
 
       <View style={styles.periodBlock}>
-        <Text style={styles.groupLabel}>时间</Text>
+        <Text style={styles.groupLabel}>{text('时间', 'Date')}</Text>
         <PeriodSelector onChange={onPeriodChange} range={range} value={period} />
         {period === 'custom' && (
           <CustomDateRange
@@ -80,16 +83,16 @@ export function ExpenseFiltersPanel({
 
       <View style={styles.grid}>
         <View style={styles.gridItem}>
-          <FilterSelect label="门店" onChange={(next) => onFilterChange('store', next)} options={stores} value={filters.store} />
+          <FilterSelect label={text('门店', 'Store')} onChange={(next) => onFilterChange('store', next)} options={stores} value={filters.store} />
         </View>
         <View style={styles.gridItem}>
-          <FilterSelect label="小票编号" onChange={(next) => onFilterChange('receiptNumber', next)} options={receipts} value={filters.receiptNumber} />
+          <FilterSelect label={text('小票编号', 'Receipt number')} onChange={(next) => onFilterChange('receiptNumber', next)} options={receipts} value={filters.receiptNumber} />
         </View>
       </View>
-      <FilterSelect label="商品名" onChange={(next) => onFilterChange('productName', next)} options={products} value={filters.productName} />
+      <FilterSelect label={text('商品名', 'Product')} onChange={(next) => onFilterChange('productName', next)} options={products} value={filters.productName} />
 
       <Pressable
-        accessibilityHint="应用时间、门店、小票和商品名筛选"
+        accessibilityHint={text('应用时间、门店、小票和商品名筛选', 'Apply date, store, receipt and product filters')}
         accessibilityRole="button"
         accessibilityState={{ busy: applying, disabled: applying }}
         disabled={applying}
@@ -103,7 +106,7 @@ export function ExpenseFiltersPanel({
         <View style={styles.applyButtonContent}>
           {applying && <ActivityIndicator color="#1A382D" size="small" />}
           <Text style={styles.applyButtonText}>
-            {applying ? '正在更新结果…' : '确定并查看结果'}
+            {applying ? text('正在更新结果…', 'Updating results…') : text('确定并查看结果', 'Apply filters')}
           </Text>
         </View>
       </Pressable>

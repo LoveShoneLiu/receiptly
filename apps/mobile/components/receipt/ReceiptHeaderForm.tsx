@@ -2,6 +2,7 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type { ReceiptCandidate } from '../../api/receiptScan';
 import { CurrencyField } from './CurrencyField';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export type ReceiptHeaderDraft = Pick<
   ReceiptCandidate,
@@ -45,31 +46,33 @@ function HeaderInput({
 }
 
 export function ReceiptHeaderForm({ receipt, onChange }: ReceiptHeaderFormProps) {
+  const { text } = useLanguage();
+
   return (
     <View style={styles.card}>
       <View style={styles.titleRow}>
-        <Text style={styles.title}>小票信息</Text>
+        <Text style={styles.title}>{text('小票信息', 'Receipt details')}</Text>
         <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>扫描候选</Text>
+          <Text style={styles.statusText}>{text('扫描候选', 'SCAN RESULT')}</Text>
         </View>
       </View>
 
       <HeaderInput
-        label="门店"
+        label={text('门店', 'Store')}
         onChange={(value) => onChange('storeName', value)}
-        placeholder="请输入门店名称"
+        placeholder={text('请输入门店名称', 'Enter store name')}
         value={receipt.storeName}
       />
       <HeaderInput
-        label="小票编号"
+        label={text('小票编号', 'Receipt number')}
         onChange={(value) => onChange('receiptNumber', value)}
-        placeholder="没有编号可留空"
+        placeholder={text('没有编号可留空', 'Optional')}
         value={receipt.receiptNumber}
       />
       <View style={styles.grid}>
         <View style={styles.gridItem}>
           <HeaderInput
-            label="购买日期"
+            label={text('购买日期', 'Purchase date')}
             onChange={(value) => onChange('purchasedOn', value)}
             placeholder="YYYY-MM-DD"
             value={receipt.purchasedOn}
@@ -77,7 +80,7 @@ export function ReceiptHeaderForm({ receipt, onChange }: ReceiptHeaderFormProps)
         </View>
         <View style={styles.gridItem}>
           <HeaderInput
-            label="本地时间"
+            label={text('本地时间', 'Local time')}
             onChange={(value) => onChange('purchasedAtLocal', value)}
             placeholder="YYYY-MM-DDTHH:mm"
             value={receipt.purchasedAtLocal}
@@ -85,7 +88,7 @@ export function ReceiptHeaderForm({ receipt, onChange }: ReceiptHeaderFormProps)
         </View>
       </View>
       <CurrencyField
-        label="小票总额"
+        label={text('小票总额', 'Receipt total')}
         onChange={(value) => onChange('declaredTotalInput', value)}
         value={receipt.declaredTotalInput}
       />

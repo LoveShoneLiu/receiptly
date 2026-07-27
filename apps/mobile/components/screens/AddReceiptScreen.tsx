@@ -16,6 +16,7 @@ import {
   scanReceiptImage,
   type ReceiptScanData,
 } from '../../api/receiptScan';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type AddReceiptScreenProps = {
   accessToken: string;
@@ -44,6 +45,7 @@ const getUploadFileName = (fileName: string | null | undefined, mimeType: string
 };
 
 export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScreenProps) {
+  const { text } = useLanguage();
   const scanControllerRef = useRef<AbortController | null>(null);
   const [selectedImage, setSelectedImage] = useState<SelectedReceiptImage | null>(null);
   const [isPicking, setIsPicking] = useState(false);
@@ -62,10 +64,10 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
       const libraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!libraryPermission.granted) {
         Alert.alert(
-          '需要相册权限',
+          text('需要相册权限', 'Photo access required'),
           libraryPermission.canAskAgain
-            ? '请允许 receiptly 访问相册，以便选择小票图片。'
-            : '相册权限已关闭，请前往系统设置为 receiptly 开启相册权限。',
+            ? text('请允许 Receiptly 访问相册，以便选择小票图片。', 'Allow Receiptly to access your photos so you can choose a receipt.')
+            : text('相册权限已关闭，请前往系统设置为 Receiptly 开启相册权限。', 'Photo access is disabled. Enable it for Receiptly in Settings.'),
         );
         return;
       }
@@ -88,7 +90,7 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
         });
       }
     } catch {
-      Alert.alert('无法打开相册', '请选择其他方式添加小票，或稍后重试。');
+      Alert.alert(text('无法打开相册', 'Unable to open photos'), text('请选择其他方式添加小票，或稍后重试。', 'Try another way to add a receipt, or try again later.'));
     } finally {
       setIsPicking(false);
     }
@@ -114,7 +116,7 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
       if (controller.signal.aborted) return;
       setScanError(error instanceof ReceiptApiError
         ? error.message
-        : '识别失败，请重试或使用手动录入。');
+        : text('识别失败，请重试或使用手动录入。', 'Recognition failed. Try again or enter the receipt manually.'));
     } finally {
       if (scanControllerRef.current === controller) scanControllerRef.current = null;
       setIsScanning(false);
@@ -131,7 +133,7 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
     return (
       <View style={styles.scannerScreen}>
         <Image
-          accessibilityLabel="从相册选择的小票预览"
+          accessibilityLabel={text('从相册选择的小票预览', 'Selected receipt preview')}
           source={{ uri: selectedImage.uri }}
           style={styles.previewImage}
         />
@@ -139,17 +141,17 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
           <View accessibilityRole="alert" style={styles.scanProgress}>
             <ActivityIndicator color="#315D49" size="small" />
             <View style={styles.scanProgressCopy}>
-              <Text style={styles.scanProgressTitle}>正在识别小票</Text>
-              <Text style={styles.scanProgressText}>图片只用于本次识别，请稍候。</Text>
+              <Text style={styles.scanProgressTitle}>{text('正在识别小票', 'Recognising receipt')}</Text>
+              <Text style={styles.scanProgressText}>{text('图片只用于本次识别，请稍候。', 'The image is used only for this scan. Please wait.')}</Text>
             </View>
             <Pressable accessibilityRole="button" onPress={cancelScan} style={styles.cancelScanButton}>
-              <Text style={styles.cancelScanText}>取消</Text>
+              <Text style={styles.cancelScanText}>{text('取消', 'Cancel')}</Text>
             </Pressable>
           </View>
         )}
         {scanError && (
           <View accessibilityRole="alert" style={styles.scanError}>
-            <Text style={styles.scanErrorTitle}>未能完成识别</Text>
+            <Text style={styles.scanErrorTitle}>{text('未能完成识别', 'Could not recognise receipt')}</Text>
             <Text style={styles.scanErrorText}>{scanError}</Text>
           </View>
         )}
@@ -164,7 +166,7 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
             style={({ pressed }) => [styles.outlineButton, pressed && styles.pressed]}
           >
             <Text style={styles.outlineButtonText}>
-              重新选择
+              {text('重新选择', 'Choose again')}
             </Text>
           </Pressable>
           <Pressable
@@ -177,7 +179,7 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.saveButtonText}>{scanError ? '重新识别' : '识别并检查'}</Text>
+            <Text style={styles.saveButtonText}>{scanError ? text('重新识别', 'Try again') : text('识别并检查', 'Scan and review')}</Text>
           </Pressable>
         </View>
       </View>
@@ -187,21 +189,21 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <View>
-        <Text style={styles.eyebrow}>新建记录</Text>
-        <Text style={styles.title}>添加小票</Text>
-        <Text style={styles.pageDescription}>扫描结果只是候选内容，保存后仍需逐项检查和确认。</Text>
+        <Text style={styles.eyebrow}>{text('新建记录', 'New entry')}</Text>
+        <Text style={styles.title}>{text('添加小票', 'Add receipt')}</Text>
+        <Text style={styles.pageDescription}>{text('扫描结果只是候选内容，保存后仍需逐项检查和确认。', 'Scan results are suggestions. Review and confirm every item before saving.')}</Text>
       </View>
 
       <View style={styles.scanCard}>
         <View style={styles.scanIconCircle}>
           <Text style={styles.scanIcon}>⌗</Text>
         </View>
-        <Text style={styles.scanTitle}>扫描小票</Text>
+        <Text style={styles.scanTitle}>{text('扫描小票', 'Scan receipt')}</Text>
         <Text style={styles.scanDescription}>
-          从相册选择小票图片。选择前请先遮挡会员号和支付识别信息。
+          {text('从相册选择小票图片。选择前请先遮挡会员号和支付识别信息。', 'Choose a receipt image from Photos. Cover membership and payment details first.')}
         </Text>
         <Pressable
-          accessibilityHint="打开系统相册并选择一张小票图片"
+          accessibilityHint={text('打开系统相册并选择一张小票图片', 'Open Photos and choose a receipt image')}
           accessibilityRole="button"
           disabled={isPicking}
           onPress={pickReceiptFromLibrary}
@@ -213,18 +215,18 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
         >
           {isPicking
             ? <ActivityIndicator color="#315D49" size="small" />
-            : <Text style={styles.primaryButtonText}>从相册选择小票</Text>}
+            : <Text style={styles.primaryButtonText}>{text('从相册选择小票', 'Choose from Photos')}</Text>}
         </Pressable>
       </View>
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => Alert.alert('手动录入', '手动录入表单将在下一步实现。')}
+        onPress={() => Alert.alert(text('手动录入', 'Manual entry'), text('手动录入表单将在下一步实现。', 'Manual entry will be available in a future update.'))}
         style={({ pressed }) => [styles.manualCard, pressed && styles.pressed]}
       >
         <View>
-          <Text style={styles.manualTitle}>手动录入</Text>
-          <Text style={styles.manualText}>相册或识别不可用时，仍可手动创建小票。</Text>
+          <Text style={styles.manualTitle}>{text('手动录入', 'Manual entry')}</Text>
+          <Text style={styles.manualText}>{text('相册或识别不可用时，仍可手动创建小票。', 'Create a receipt manually when Photos or recognition is unavailable.')}</Text>
         </View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>

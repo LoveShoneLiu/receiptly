@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-nati
 
 import type { ReceiptCandidateLine } from '../../api/receiptScan';
 import { CurrencyField } from './CurrencyField';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export type EditableReceiptLine = ReceiptCandidateLine & {
   linePriceInput: string;
@@ -50,6 +51,8 @@ export function ReceiptLineEditor({
   onChange,
   onRemove,
 }: ReceiptLineEditorProps) {
+  const { text } = useLanguage();
+
   return (
     <View style={[styles.card, !line.included && styles.cardExcluded]}>
       <View style={styles.header}>
@@ -57,13 +60,13 @@ export function ReceiptLineEditor({
           <Text style={styles.lineNumberText}>{index + 1}</Text>
         </View>
         <View style={styles.headerCopy}>
-          <Text style={styles.headerTitle}>商品行</Text>
-          <Text numberOfLines={2} style={styles.rawText}>{line.rawText || '手动添加的商品'}</Text>
+          <Text style={styles.headerTitle}>{text('商品行', 'Receipt item')}</Text>
+          <Text numberOfLines={2} style={styles.rawText}>{line.rawText || text('手动添加的商品', 'Manually added item')}</Text>
         </View>
         <View style={styles.includeControl}>
-          <Text style={styles.includeLabel}>{line.included ? '计入' : '排除'}</Text>
+          <Text style={styles.includeLabel}>{line.included ? text('计入', 'Include') : text('排除', 'Exclude')}</Text>
           <Switch
-            accessibilityLabel={`商品行 ${index + 1} 是否计入`}
+            accessibilityLabel={text(`商品行 ${index + 1} 是否计入`, `Include receipt item ${index + 1}`)}
             onValueChange={(value) => onChange('included', value)}
             trackColor={{ false: '#D5DBD7', true: '#B9DCA8' }}
             value={line.included}
@@ -72,24 +75,24 @@ export function ReceiptLineEditor({
       </View>
 
       <LineInput
-        label="商品名"
+        label={text('商品名', 'Product name')}
         onChange={(value) => onChange('productName', value)}
-        placeholder="请输入商品名"
+        placeholder={text('请输入商品名', 'Enter product name')}
         value={line.productName}
       />
 
       <View style={styles.grid}>
         <View style={styles.gridItem}>
           <LineInput
-            label="购买数量"
+            label={text('购买数量', 'Quantity')}
             onChange={(value) => onChange('quantity', value)}
-            placeholder="例如 0.860"
+            placeholder={text('例如 0.860', 'e.g. 0.860')}
             value={line.quantity}
           />
         </View>
         <View style={styles.gridItem}>
           <LineInput
-            label="单位"
+            label={text('单位', 'Unit')}
             onChange={(value) => onChange('unit', value.toLowerCase())}
             placeholder="kg / l / item"
             value={line.unit}
@@ -100,14 +103,14 @@ export function ReceiptLineEditor({
       <View style={styles.grid}>
         <View style={styles.gridItem}>
           <CurrencyField
-            label="单位单价"
+            label={text('单位单价', 'Unit price')}
             onChange={(value) => onChange('unitPriceInput', value)}
             value={line.unitPriceInput}
           />
         </View>
         <View style={styles.gridItem}>
           <LineInput
-            label="单价基准"
+            label={text('单价基准', 'Price basis')}
             onChange={(value) => onChange('unitPriceBasis', value.toLowerCase())}
             placeholder="kg / l / item"
             value={line.unitPriceBasis}
@@ -116,7 +119,7 @@ export function ReceiptLineEditor({
       </View>
 
       <CurrencyField
-        label="实付行价"
+        label={text('实付行价', 'Line total')}
         onChange={(value) => onChange('linePriceInput', value)}
         value={line.linePriceInput}
       />
@@ -126,7 +129,7 @@ export function ReceiptLineEditor({
         onPress={onRemove}
         style={({ pressed }) => [styles.removeButton, pressed && styles.pressed]}
       >
-        <Text style={styles.removeText}>删除此商品行</Text>
+        <Text style={styles.removeText}>{text('删除此商品行', 'Remove item')}</Text>
       </Pressable>
     </View>
   );

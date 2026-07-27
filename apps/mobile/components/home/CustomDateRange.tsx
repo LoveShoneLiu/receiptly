@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type { DateRange } from './types';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type CustomDateRangeProps = {
   draftRange: DateRange;
@@ -19,11 +20,13 @@ export function CustomDateRange({
   onApply,
   showApplyButton = true,
 }: CustomDateRangeProps) {
+  const { text } = useLanguage();
+
   return (
     <View style={styles.container}>
       <View style={styles.fields}>
-        <DateField label="开始日期" value={draftRange.start} onChangeText={(value) => onChange('start', value)} />
-        <DateField label="结束日期" value={draftRange.end} onChangeText={(value) => onChange('end', value)} />
+        <DateField label={text('开始日期', 'Start date')} value={draftRange.start} onChangeText={(value) => onChange('start', value)} />
+        <DateField label={text('结束日期', 'End date')} value={draftRange.end} onChangeText={(value) => onChange('end', value)} />
       </View>
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {showApplyButton && onApply && (
@@ -43,7 +46,7 @@ export function CustomDateRange({
             applyDisabled && styles.applyButtonTextDisabled,
           ]}
           >
-            {applyDisabled ? '当前范围已应用' : '应用时间范围'}
+            {applyDisabled ? text('当前范围已应用', 'Range applied') : text('应用时间范围', 'Apply date range')}
           </Text>
         </Pressable>
       )}
@@ -60,11 +63,13 @@ function DateField({
   value: string;
   onChangeText: (value: string) => void;
 }) {
+  const { text } = useLanguage();
+
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
-        accessibilityLabel={`${label}，格式为年-月-日`}
+        accessibilityLabel={text(`${label}，格式为年-月-日`, `${label}, format year-month-day`)}
         autoCapitalize="none"
         keyboardType="numbers-and-punctuation"
         onChangeText={onChangeText}

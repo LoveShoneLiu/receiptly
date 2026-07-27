@@ -1,7 +1,11 @@
 import { fetch } from 'expo/fetch';
 
+const DEFAULT_API_BASE_URL = __DEV__
+  ? 'http://127.0.0.1:3000'
+  : 'https://www.liushaofei.cn';
+
 export const API_BASE_URL = (
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:3000'
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL
 ).replace(/\/$/, '');
 
 export const API_PREFIX = '/api/receiptly/v1';

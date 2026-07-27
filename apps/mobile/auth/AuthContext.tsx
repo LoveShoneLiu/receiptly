@@ -11,6 +11,7 @@ import {
 
 import {
   createHousehold as createHouseholdRequest,
+  deleteAccount as deleteAccountRequest,
   getMe,
   logoutSession,
   refreshSession,
@@ -29,6 +30,7 @@ type AuthContextValue = {
   acceptHouseholdInvitation: (code: string) => Promise<void>;
   acceptSession: (session: AuthSession) => Promise<void>;
   createHousehold: (name: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -143,10 +145,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [persistSession]);
 
+  const deleteAccount = useCallback(async () => {
+    const current = sessionRef.current;
+    if (!current) throw new Error('请先登录。');
+    await deleteAccountRequest(current.accessToken);
+    await persistSession(null);
+  }, [persistSession]);
+
   const value = useMemo(() => ({
     acceptHouseholdInvitation,
     acceptSession,
     createHousehold,
+    deleteAccount,
     logout,
     restoring,
     session,
@@ -154,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     acceptHouseholdInvitation,
     acceptSession,
     createHousehold,
+    deleteAccount,
     logout,
     restoring,
     session,

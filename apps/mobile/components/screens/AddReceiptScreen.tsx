@@ -90,7 +90,10 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
         });
       }
     } catch {
-      Alert.alert(text('无法打开相册', 'Unable to open photos'), text('请选择其他方式添加小票，或稍后重试。', 'Try another way to add a receipt, or try again later.'));
+      Alert.alert(
+        text('无法打开相册', 'Unable to open photos'),
+        text('请稍后重试。', 'Please try again later.'),
+      );
     } finally {
       setIsPicking(false);
     }
@@ -116,7 +119,7 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
       if (controller.signal.aborted) return;
       setScanError(error instanceof ReceiptApiError
         ? error.message
-        : text('识别失败，请重试或使用手动录入。', 'Recognition failed. Try again or enter the receipt manually.'));
+        : text('识别失败，请重新选择图片或稍后重试。', 'Recognition failed. Choose another image or try again later.'));
     } finally {
       if (scanControllerRef.current === controller) scanControllerRef.current = null;
       setIsScanning(false);
@@ -219,6 +222,7 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
         </Pressable>
       </View>
 
+      {/* Manual entry is hidden for the initial App Store release until the flow is complete.
       <Pressable
         accessibilityRole="button"
         onPress={() => Alert.alert(text('手动录入', 'Manual entry'), text('手动录入表单将在下一步实现。', 'Manual entry will be available in a future update.'))}
@@ -230,6 +234,7 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
         </View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
+      */}
     </ScrollView>
   );
 }

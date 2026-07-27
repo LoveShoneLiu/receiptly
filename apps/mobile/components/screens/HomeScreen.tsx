@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -281,6 +280,7 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
             {text('看清每一笔已确认的家庭支出', 'See every confirmed household expense')}
           </Text>
         </View>
+        {/* Ledger tools are hidden for the initial App Store release until they are complete.
         <Pressable
           accessibilityLabel={text('账单工具', 'Ledger tools')}
           accessibilityRole="button"
@@ -295,6 +295,7 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
         >
           <Text style={styles.toolIcon}>⚙︎</Text>
         </Pressable>
+        */}
       </View>
 
       {error && (

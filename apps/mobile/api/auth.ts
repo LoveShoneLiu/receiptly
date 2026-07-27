@@ -240,6 +240,18 @@ export async function logoutSession(accessToken: string) {
   });
 }
 
+export async function deleteAccount(accessToken: string) {
+  const data = await publicRequest<unknown>('/me', {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    method: 'DELETE',
+  });
+  if (!isRecord(data) || data.deleted !== true) {
+    throw new Error('删除账号接口返回的数据格式不正确。');
+  }
+}
+
 export async function createHousehold(accessToken: string, name: string) {
   const data = await publicRequest<unknown>('/households', {
     body: JSON.stringify({

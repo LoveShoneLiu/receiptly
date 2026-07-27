@@ -1,13 +1,26 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
+import { ApiError } from '../../api/base';
 import type { AuthHousehold, AuthUser } from '../../auth/types';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { HouseholdMembersScreen } from './HouseholdMembersScreen';
 
+const PRIVACY_POLICY_URL = 'https://www.liushaofei.cn/receiptly/privacy';
+
 type ProfileScreenProps = {
   accessToken: string;
   household: AuthHousehold;
+  onDeleteAccount: () => Promise<void>;
   onLogout: () => void;
   user: AuthUser;
 };
@@ -15,12 +28,72 @@ type ProfileScreenProps = {
 export function ProfileScreen({
   accessToken,
   household,
+  onDeleteAccount,
   onLogout,
   user,
 }: ProfileScreenProps) {
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const { language, setLanguage, text } = useLanguage();
   const avatar = (user.displayName ?? user.email ?? 'R').slice(0, 1).toUpperCase();
+
+  const deleteAccount = async () => {
+    if (deletingAccount) return;
+    setDeletingAccount(true);
+    try {
+      await onDeleteAccount();
+    } catch (error) {
+      const ownerTransferRequired = error instanceof ApiError
+        && error.code === 'OWNER_TRANSFER_REQUIRED';
+      Alert.alert(
+        text('无法删除账号', 'Could not delete account'),
+        ownerTransferRequired
+          ? text(
+            '请先删除家庭中的其他成员，再删除账号。',
+            'Remove the other household members before deleting your account.',
+          )
+          : text(
+            '账号尚未删除，请检查网络后重试。',
+            'Your account was not deleted. Check your connection and try again.',
+          ),
+      );
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
+
+  const confirmAccountDeletion = () => {
+    if (deletingAccount) return;
+    Alert.alert(
+      text('永久删除账号？', 'Permanently delete account?'),
+      text(
+        '此操作会撤销你的所有登录会话并删除账号。单人家庭的小票和账目也会被永久删除，且无法恢复。',
+        'This revokes all sessions and deletes your account. Receipts and ledger data in a single-member household will also be permanently deleted and cannot be recovered.',
+      ),
+      [
+        { style: 'cancel', text: text('取消', 'Cancel') },
+        {
+          onPress: () => void deleteAccount(),
+          style: 'destructive',
+          text: text('删除账号', 'Delete account'),
+        },
+      ],
+    );
+  };
+
+  const openPrivacyPolicy = async () => {
+    try {
+      await Linking.openURL(PRIVACY_POLICY_URL);
+    } catch {
+      Alert.alert(
+        text('无法打开隐私政策', 'Could not open privacy policy'),
+        text(
+          '请稍后重试，或在浏览器中访问 www.liushaofei.cn/receiptly/privacy。',
+          'Try again later, or visit www.liushaofei.cn/receiptly/privacy in your browser.',
+        ),
+      );
+    }
+  };
 
   if (showMembers) {
     return (
@@ -90,7 +163,12 @@ export function ProfileScreen({
             />
           </View>
         </View>
-        <SettingRow label={text('隐私与数据', 'Privacy & data')} value="›" last />
+        <SettingRow
+          label={text('隐私与数据', 'Privacy & data')}
+          onPress={() => void openPrivacyPolicy()}
+          value="›"
+          last
+        />
       </View>
 
       <View style={styles.notice}>
@@ -101,6 +179,35 @@ export function ProfileScreen({
             'Receipts and spending records are private to your household and are never used for advertising.',
           )}
         </Text>
+      </View>
+
+      <View style={styles.dangerZone}>
+        <Text style={styles.dangerTitle}>{text('删除账号', 'Delete account')}</Text>
+        <Text style={styles.dangerText}>
+          {text(
+            '永久删除账号并撤销所有登录会话。此操作无法撤销。',
+            'Permanently delete your account and revoke every session. This cannot be undone.',
+          )}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ busy: deletingAccount, disabled: deletingAccount }}
+          disabled={deletingAccount}
+          onPress={confirmAccountDeletion}
+          style={({ pressed }) => [
+            styles.deleteButton,
+            pressed && styles.pressed,
+            deletingAccount && styles.disabled,
+          ]}
+        >
+          {deletingAccount ? (
+            <ActivityIndicator color="#A33F35" size="small" />
+          ) : (
+            <Text style={styles.deleteButtonText}>
+              {text('永久删除账号', 'Permanently delete account')}
+            </Text>
+          )}
+        </Pressable>
       </View>
     </ScrollView>
   );
@@ -196,5 +303,11 @@ const styles = StyleSheet.create({
   notice: { backgroundColor: '#EDF2E7', borderRadius: 16, padding: 18 },
   noticeTitle: { color: '#315D49', fontSize: 15, fontWeight: '700' },
   noticeText: { color: '#496157', fontSize: 14, lineHeight: 20, marginTop: 6 },
+  dangerZone: { backgroundColor: '#FFF7F5', borderColor: '#F0D3CF', borderRadius: 16, borderWidth: 1, padding: 18 },
+  dangerTitle: { color: '#8E3E36', fontSize: 15, fontWeight: '700' },
+  dangerText: { color: '#76534E', fontSize: 13, lineHeight: 19, marginTop: 6 },
+  deleteButton: { alignItems: 'center', borderColor: '#C9655A', borderRadius: 12, borderWidth: 1, justifyContent: 'center', marginTop: 14, minHeight: 48 },
+  deleteButtonText: { color: '#A33F35', fontSize: 14, fontWeight: '700' },
+  disabled: { opacity: 0.55 },
   pressed: { opacity: 0.72 },
 });

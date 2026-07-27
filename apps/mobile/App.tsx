@@ -22,7 +22,12 @@ import type { Tab } from './components/types';
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 
 function AppContent() {
-  const { logout, restoring, session } = useAuth();
+  const {
+    deleteAccount,
+    logout,
+    restoring,
+    session,
+  } = useAuth();
   const { text } = useLanguage();
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [receiptToReview, setReceiptToReview] = useState<ReceiptScanData | null>(null);
@@ -85,6 +90,7 @@ function AppContent() {
               <ProfileScreen
                 accessToken={session.accessToken}
                 household={activeHousehold}
+                onDeleteAccount={deleteAccount}
                 onLogout={() => void logout()}
                 user={session.user}
               />

@@ -72,6 +72,11 @@ const isNullableString = (value: unknown): value is string | null =>
 const isNullableCents = (value: unknown): value is number | null =>
   value === null || Number.isInteger(value);
 
+const toPurchasedAtLocalMinute = (value: string | null): string | null => {
+  const trimmedValue = value?.trim();
+  return trimmedValue ? trimmedValue.substring(0, 16) : null;
+};
+
 const isReceiptStatus = (value: unknown): value is ReceiptStatus =>
   value === 'draft'
   || value === 'processing'
@@ -218,8 +223,18 @@ export async function confirmReceipt(
 
   let data: unknown;
   try {
+    const confirmationPayload: ReceiptScanConfirmPayload = {
+      ...reviewedCandidate,
+      receipt: {
+        ...reviewedCandidate.receipt,
+        purchasedAtLocal: toPurchasedAtLocalMinute(
+          reviewedCandidate.receipt.purchasedAtLocal,
+        ),
+      },
+    };
+
     data = await publicRequest<unknown>('/receipts/scan/confirm', {
-      body: JSON.stringify(reviewedCandidate),
+      body: JSON.stringify(confirmationPayload),
       headers,
       method: 'POST',
       signal: options.signal,

@@ -19,7 +19,7 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.shaofeiliu.receiptly",
+      "bundleIdentifier": "com.shaofeiliu.receiptlyapp",
       "buildNumber": "1",
       "config": {
         "usesNonExemptEncryption": false

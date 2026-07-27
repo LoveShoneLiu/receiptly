@@ -124,9 +124,12 @@ export async function loginWithApple(input: {
   return toSession(parseLoginPayload(data));
 }
 
-export async function requestEmailCode(email: string) {
+export async function requestEmailCode(
+  email: string,
+  locale: 'zh-CN' | 'en-NZ',
+) {
   const data = await publicRequest<unknown>('/auth/email/request-code', {
-    body: JSON.stringify({ email: email.trim().toLowerCase(), locale: 'zh-CN' }),
+    body: JSON.stringify({ email: email.trim().toLowerCase(), locale }),
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   });

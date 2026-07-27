@@ -54,11 +54,15 @@ export async function createHouseholdInvitation(
   accessToken: string,
   householdId: string,
   email: string,
+  locale: 'zh-CN' | 'en-NZ',
 ) {
   const data = await publicRequest<unknown>(
     `/households/${encodeURIComponent(householdId)}/invitations`,
     {
-      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        locale,
+      }),
       headers: authorizationHeaders(accessToken),
       method: 'POST',
     },

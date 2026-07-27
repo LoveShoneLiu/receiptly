@@ -115,7 +115,7 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F7F8F4' },
+  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
   app: { flex: 1 },
   restoring: { alignItems: 'center', flex: 1, justifyContent: 'center' },
   restoringText: { color: '#62766C', fontSize: 13, marginTop: 10 },

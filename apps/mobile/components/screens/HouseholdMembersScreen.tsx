@@ -20,6 +20,7 @@ import {
   type HouseholdMember,
 } from '../../api/households';
 import type { AuthHousehold, AuthUser } from '../../auth/types';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type HouseholdMembersScreenProps = {
   accessToken: string;
@@ -33,15 +34,20 @@ const normalizeEmail = (value: string) => value.trim().toLowerCase();
 const isValidEmail = (value: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
 
-const formatJoinedDate = (value: string) => {
+const formatJoinedDate = (
+  value: string,
+  locale: 'zh-CN' | 'en-NZ',
+  text: (zh: string, en: string) => string,
+) => {
   const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? '已加入'
-    : `${new Intl.DateTimeFormat('zh-CN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    }).format(date)}加入`;
+  if (Number.isNaN(date.getTime())) return text('已加入', 'Joined');
+
+  const formattedDate = new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+  return text(`${formattedDate}加入`, `Joined ${formattedDate}`);
 };
 
 export function HouseholdMembersScreen({
@@ -50,6 +56,7 @@ export function HouseholdMembersScreen({
   onBack,
   user,
 }: HouseholdMembersScreenProps) {
+  const { locale, text } = useLanguage();
   const [members, setMembers] = useState<HouseholdMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -66,11 +73,13 @@ export function HouseholdMembersScreen({
       const result = await getHouseholdMembers(accessToken, household.id);
       setMembers(result);
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : '家庭成员加载失败，请重试。');
+      setLoadError(error instanceof Error
+        ? error.message
+        : text('家庭成员加载失败，请重试。', 'Could not load household members. Try again.'));
     } finally {
       setLoading(false);
     }
-  }, [accessToken, household.id]);
+  }, [accessToken, household.id, text]);
 
   useEffect(() => {
     void loadMembers();
@@ -79,7 +88,7 @@ export function HouseholdMembersScreen({
   const sendInvitation = async () => {
     const email = normalizeEmail(inviteEmail);
     if (!isValidEmail(email)) {
-      setInviteError('请输入有效的邮箱地址。');
+      setInviteError(text('请输入有效的邮箱地址。', 'Enter a valid email address.'));
       return;
     }
 
@@ -87,26 +96,36 @@ export function HouseholdMembersScreen({
     setInviteError(null);
     setInvitation(null);
     try {
-      const result = await createHouseholdInvitation(accessToken, household.id, email);
+      const result = await createHouseholdInvitation(
+        accessToken,
+        household.id,
+        email,
+        locale,
+      );
       setInvitation(result);
       setInviteEmail('');
     } catch (error) {
-      setInviteError(error instanceof Error ? error.message : '邀请发送失败，请稍后重试。');
+      setInviteError(error instanceof Error
+        ? error.message
+        : text('邀请发送失败，请稍后重试。', 'Could not send the invitation. Try again later.'));
     } finally {
       setInviting(false);
     }
   };
 
   const confirmRemoval = (member: HouseholdMember) => {
-    const identity = member.displayName ?? member.email ?? '该成员';
+    const identity = member.displayName ?? member.email ?? text('该成员', 'this member');
     Alert.alert(
-      '删除家庭成员',
-      `确定将 ${identity} 移出家庭吗？其已经确认的历史小票会继续保留。`,
+      text('删除家庭成员', 'Remove household member'),
+      text(
+        `确定将 ${identity} 移出家庭吗？其已经确认的历史小票会继续保留。`,
+        `Remove ${identity} from the household? Their confirmed receipt history will be retained.`,
+      ),
       [
-        { style: 'cancel', text: '取消' },
+        { style: 'cancel', text: text('取消', 'Cancel') },
         {
           style: 'destructive',
-          text: '删除成员',
+          text: text('删除成员', 'Remove'),
           onPress: () => {
             setRemovingUserId(member.userId);
             void removeHouseholdMember(accessToken, household.id, member.userId)
@@ -116,8 +135,10 @@ export function HouseholdMembersScreen({
               })
               .catch((error) => {
                 Alert.alert(
-                  '删除失败',
-                  error instanceof Error ? error.message : '暂时无法删除该成员。',
+                  text('删除失败', 'Could not remove member'),
+                  error instanceof Error
+                    ? error.message
+                    : text('暂时无法删除该成员。', 'This member could not be removed right now.'),
                 );
               })
               .finally(() => setRemovingUserId(null));
@@ -136,7 +157,7 @@ export function HouseholdMembersScreen({
     >
       <View style={styles.navigation}>
         <Pressable
-          accessibilityLabel="返回个人中心"
+          accessibilityLabel={text('返回个人中心', 'Back to profile')}
           accessibilityRole="button"
           onPress={onBack}
           style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
@@ -144,7 +165,7 @@ export function HouseholdMembersScreen({
           <Text style={styles.backIcon}>‹</Text>
         </Pressable>
         <View>
-          <Text style={styles.navigationTitle}>家庭成员</Text>
+          <Text style={styles.navigationTitle}>{text('家庭成员', 'Household members')}</Text>
           <Text style={styles.navigationSubtitle}>{household.name}</Text>
         </View>
       </View>
@@ -155,13 +176,16 @@ export function HouseholdMembersScreen({
       >
         {isOwner && (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>邀请家庭成员</Text>
+            <Text style={styles.cardTitle}>{text('邀请家庭成员', 'Invite a household member')}</Text>
             <Text style={styles.cardDescription}>
-              邀请邮件会发送一次性邀请码，对方明确同意后才会加入家庭。
+              {text(
+                '邀请邮件会发送一次性邀请码，对方明确同意后才会加入家庭。',
+                'The email contains a one-time invitation code. They join only after accepting.',
+              )}
             </Text>
-            <Text style={styles.label}>成员邮箱</Text>
+            <Text style={styles.label}>{text('成员邮箱', 'Member email')}</Text>
             <TextInput
-              accessibilityLabel="受邀成员邮箱"
+              accessibilityLabel={text('受邀成员邮箱', 'Invited member email')}
               autoCapitalize="none"
               autoComplete="email"
               editable={!inviting}
@@ -181,9 +205,14 @@ export function HouseholdMembersScreen({
             )}
             {invitation && (
               <View accessibilityRole="alert" style={styles.success}>
-                <Text style={styles.successTitle}>邀请邮件已发送</Text>
+                <Text style={styles.successTitle}>
+                  {text('邀请邮件已发送', 'Invitation email sent')}
+                </Text>
                 <Text style={styles.successText}>
-                  {invitation.email} 同意邀请后才会出现在成员列表中。
+                  {text(
+                    `${invitation.email} 同意邀请后才会出现在成员列表中。`,
+                    `${invitation.email} will appear in the member list after accepting.`,
+                  )}
                 </Text>
               </View>
             )}
@@ -199,21 +228,30 @@ export function HouseholdMembersScreen({
             >
               {inviting
                 ? <ActivityIndicator color="#1A382D" />
-                : <Text style={styles.primaryButtonText}>发送邀请邮件</Text>}
+                : (
+                  <Text style={styles.primaryButtonText}>
+                    {text('发送邀请邮件', 'Send invitation email')}
+                  </Text>
+                )}
             </Pressable>
           </View>
         )}
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>当前成员</Text>
+            <Text style={styles.sectionTitle}>{text('当前成员', 'Current members')}</Text>
             <Text style={styles.sectionDescription}>
-              {loading ? '正在获取成员…' : `${members.length} 位家庭成员`}
+              {loading
+                ? text('正在获取成员…', 'Loading members…')
+                : text(
+                  `${members.length} 位家庭成员`,
+                  `${members.length} household ${members.length === 1 ? 'member' : 'members'}`,
+                )}
             </Text>
           </View>
           {!loading && loadError && (
             <Pressable accessibilityRole="button" onPress={() => void loadMembers()}>
-              <Text style={styles.retryText}>重试</Text>
+              <Text style={styles.retryText}>{text('重试', 'Retry')}</Text>
             </Pressable>
           )}
         </View>
@@ -224,19 +262,28 @@ export function HouseholdMembersScreen({
           </View>
         ) : loadError ? (
           <View accessibilityRole="alert" style={styles.errorCard}>
-            <Text style={styles.errorCardTitle}>无法读取家庭成员</Text>
+            <Text style={styles.errorCardTitle}>
+              {text('无法读取家庭成员', 'Could not load household members')}
+            </Text>
             <Text style={styles.errorCardText}>{loadError}</Text>
           </View>
         ) : members.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>暂时没有成员资料</Text>
-            <Text style={styles.emptyText}>服务端返回成员后会显示在这里。</Text>
+            <Text style={styles.emptyTitle}>
+              {text('暂时没有成员资料', 'No member details yet')}
+            </Text>
+            <Text style={styles.emptyText}>
+              {text(
+                '服务端返回成员后会显示在这里。',
+                'Household members will appear here when available.',
+              )}
+            </Text>
           </View>
         ) : (
           members.map((member) => {
             const isCurrentUser = member.userId === user.id;
             const canRemove = isOwner && member.role !== 'owner' && !isCurrentUser;
-            const identity = member.displayName ?? member.email ?? '家庭成员';
+            const identity = member.displayName ?? member.email ?? text('家庭成员', 'Household member');
 
             return (
               <View key={member.userId} style={styles.memberCard}>
@@ -246,18 +293,20 @@ export function HouseholdMembersScreen({
                 <View style={styles.memberIdentity}>
                   <View style={styles.memberNameRow}>
                     <Text numberOfLines={1} style={styles.memberName}>{identity}</Text>
-                    {isCurrentUser && <Text style={styles.youBadge}>你</Text>}
+                    {isCurrentUser && <Text style={styles.youBadge}>{text('你', 'You')}</Text>}
                   </View>
                   {member.displayName && member.email && (
                     <Text numberOfLines={1} style={styles.memberEmail}>{member.email}</Text>
                   )}
                   <Text style={styles.memberMeta}>
-                    {member.role === 'owner' ? '管理员' : '成员'} · {formatJoinedDate(member.joinedAt)}
+                    {member.role === 'owner'
+                      ? text('管理员', 'Owner')
+                      : text('成员', 'Member')} · {formatJoinedDate(member.joinedAt, locale, text)}
                   </Text>
                 </View>
                 {canRemove && (
                   <Pressable
-                    accessibilityLabel={`删除成员 ${identity}`}
+                    accessibilityLabel={text(`删除成员 ${identity}`, `Remove member ${identity}`)}
                     accessibilityRole="button"
                     disabled={removingUserId !== null}
                     onPress={() => confirmRemoval(member)}
@@ -269,7 +318,7 @@ export function HouseholdMembersScreen({
                   >
                     {removingUserId === member.userId
                       ? <ActivityIndicator color="#A13D35" size="small" />
-                      : <Text style={styles.removeButtonText}>删除</Text>}
+                      : <Text style={styles.removeButtonText}>{text('删除', 'Remove')}</Text>}
                   </Pressable>
                 )}
               </View>

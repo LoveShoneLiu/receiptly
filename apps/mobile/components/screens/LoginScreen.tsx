@@ -28,22 +28,22 @@ type BusyAction =
   | 'email-verify'
   | null;
 
-const getMessage = (error: unknown) =>
-  error instanceof Error ? error.message : '登录失败，请稍后重试。';
+const getMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
-const validateEmail = (email: string) => {
+const validateEmail = (email: string, invalidMessage: string) => {
   const normalizedEmail = normalizeEmail(email);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-    throw new Error('请输入有效的邮箱地址。');
+    throw new Error(invalidMessage);
   }
   return normalizedEmail;
 };
 
 export function LoginScreen() {
   const { acceptSession } = useAuth();
-  const { text } = useLanguage();
+  const { locale, text } = useLanguage();
   const [busy, setBusy] = useState<BusyAction>(null);
   const [email, setEmail] = useState('');
   const [emailMode, setEmailMode] = useState<EmailMode>('login');
@@ -71,15 +71,21 @@ export function LoginScreen() {
     try {
       await task();
     } catch (nextError) {
-      setError(getMessage(nextError));
+      setError(getMessage(
+        nextError,
+        text('登录失败，请稍后重试。', 'Sign-in failed. Try again later.'),
+      ));
     } finally {
       setBusy(null);
     }
   };
 
   const requestCode = () => run('email-request', async () => {
-    const normalizedEmail = validateEmail(email);
-    const result = await requestEmailCode(normalizedEmail);
+    const normalizedEmail = validateEmail(
+      email,
+      text('请输入有效的邮箱地址。', 'Enter a valid email address.'),
+    );
+    const result = await requestEmailCode(normalizedEmail, locale);
     setEmail(normalizedEmail);
     if (emailMode === 'register') setRegistrationCodeRequested(true);
     else setCodeRequested(true);
@@ -87,26 +93,43 @@ export function LoginScreen() {
   });
 
   const verifyCode = () => run('email-verify', async () => {
-    if (!/^\d{6}$/.test(code)) throw new Error('请输入六位数字验证码。');
+    if (!/^\d{6}$/.test(code)) {
+      throw new Error(text('请输入六位数字验证码。', 'Enter the 6-digit verification code.'));
+    }
     const session = await verifyEmailCode(email, code);
     await acceptSession(session);
   });
 
   const submitPasswordLogin = () => run('email-login', async () => {
-    const normalizedEmail = validateEmail(email);
-    if (!password) throw new Error('请输入密码。');
+    const normalizedEmail = validateEmail(
+      email,
+      text('请输入有效的邮箱地址。', 'Enter a valid email address.'),
+    );
+    if (!password) throw new Error(text('请输入密码。', 'Enter your password.'));
     const session = await loginWithEmailPassword(normalizedEmail, password);
     await acceptSession(session);
   });
 
   const submitPasswordRegistration = () => run('email-register', async () => {
-    const normalizedEmail = validateEmail(email);
-    if (!/^\d{6}$/.test(code)) throw new Error('请输入六位数字验证码。');
-    if (password.length < 8) throw new Error('密码至少需要 8 个字符。');
-    if (new TextEncoder().encode(password).length > 72) {
-      throw new Error('密码的 UTF-8 编码不能超过 72 字节。');
+    const normalizedEmail = validateEmail(
+      email,
+      text('请输入有效的邮箱地址。', 'Enter a valid email address.'),
+    );
+    if (!/^\d{6}$/.test(code)) {
+      throw new Error(text('请输入六位数字验证码。', 'Enter the 6-digit verification code.'));
     }
-    if (password !== passwordConfirmation) throw new Error('两次输入的密码不一致。');
+    if (password.length < 8) {
+      throw new Error(text('密码至少需要 8 个字符。', 'Password must be at least 8 characters.'));
+    }
+    if (new TextEncoder().encode(password).length > 72) {
+      throw new Error(text(
+        '密码的 UTF-8 编码不能超过 72 字节。',
+        'Password must not exceed 72 UTF-8 bytes.',
+      ));
+    }
+    if (password !== passwordConfirmation) {
+      throw new Error(text('两次输入的密码不一致。', 'Passwords do not match.'));
+    }
     const session = await registerWithEmailPassword({
       code,
       displayName: displayName.trim() || null,

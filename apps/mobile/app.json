@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "receiptly",
+    "name": "Receiptly",
     "slug": "receiptly",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,13 +10,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "允许 receiptly 使用相机拍摄购物小票。"
+          "cameraPermission": "允许 Receiptly 使用相机拍摄购物小票。"
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "允许 receiptly 从相册选择购物小票。",
+          "photosPermission": "允许 Receiptly 从相册选择购物小票。",
           "microphonePermission": false
         }
       ]
@@ -25,8 +25,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.shaofeiliu.receiptly",
       "infoPlist": {
-        "NSCameraUsageDescription": "允许 receiptly 使用相机拍摄购物小票。",
-        "NSPhotoLibraryUsageDescription": "允许 receiptly 从相册选择购物小票。",
+        "NSCameraUsageDescription": "允许 Receiptly 使用相机拍摄购物小票。",
+        "NSPhotoLibraryUsageDescription": "允许 Receiptly 从相册选择购物小票。",
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         }
@@ -34,10 +34,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#5A91F2",
+        "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false
     },

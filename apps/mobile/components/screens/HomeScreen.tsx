@@ -303,19 +303,12 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
         </View>
       )}
 
-      {loading && !overviewData && (
-        <View style={styles.loadingCard}>
-          <Text style={styles.loadingTitle}>正在读取家庭账本…</Text>
-          <Text style={styles.loadingText}>只会汇总已经确认的小票明细。</Text>
-        </View>
-      )}
-
       <SpendingSummary
-        loading={loading && overviewData !== null}
+        loading={loading}
         onPeriodChange={setOverviewPeriod}
         period={overviewPeriod}
         range={activeOverviewRange}
-        totalCents={overviewData?.summary.totalCents ?? 0}
+        totalCents={overviewData?.summary.totalCents ?? null}
         updatedAt={updatedAt}
       />
 
@@ -422,9 +415,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   retryText: { color: '#7F3028', fontSize: 13, fontWeight: '800' },
-  loadingCard: { backgroundColor: '#EDF3E9', borderRadius: 16, padding: 16 },
-  loadingTitle: { color: '#2A5041', fontSize: 14, fontWeight: '800' },
-  loadingText: { color: '#61776C', fontSize: 12, marginTop: 4 },
   detailsHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   detailsTitle: { color: '#1F382F', fontSize: 21, fontWeight: '800' },
   detailsSubtitle: { color: '#7A8981', fontSize: 12, marginTop: 4 },

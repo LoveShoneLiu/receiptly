@@ -13,7 +13,7 @@ type SpendingSummaryProps = {
   onPeriodChange: (period: OverviewPeriodPreset) => void;
   period: OverviewPeriodPreset;
   range: DateRange;
-  totalCents: number;
+  totalCents: number | null;
   updatedAt: string | null;
 };
 
@@ -77,7 +77,7 @@ export function SpendingSummary({
               numberOfLines={1}
               style={[styles.amount, loading && styles.amountLoading]}
             >
-              NZ {formatCurrency(totalCents)}
+              {totalCents === null ? 'NZ $—' : `NZ ${formatCurrency(totalCents)}`}
             </Text>
             {loading && (
               <ActivityIndicator

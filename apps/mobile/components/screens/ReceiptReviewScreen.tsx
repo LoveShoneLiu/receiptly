@@ -10,7 +10,7 @@ import {
 
 import {
   confirmReceipt,
-  ReceiptApiError,
+  getReceiptApiErrorMessage,
   type ReceiptCandidateLine,
   type ReceiptScanConfirmPayload,
   type ReceiptScanData,
@@ -179,9 +179,11 @@ export function ReceiptReviewScreen({
       await confirmReceipt(createConfirmationPayload(), { accessToken });
       onConfirmed();
     } catch (error) {
-      setConfirmError(error instanceof ReceiptApiError
-        ? error.message
-        : text('确认失败，请稍后重试。', 'Confirmation failed. Try again later.'));
+      setConfirmError(getReceiptApiErrorMessage(
+        error,
+        text,
+        text('确认失败，请稍后重试。', 'Confirmation failed. Try again later.'),
+      ));
     } finally {
       setIsConfirming(false);
     }

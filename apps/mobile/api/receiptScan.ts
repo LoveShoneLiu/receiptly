@@ -147,6 +147,27 @@ export class ReceiptApiError extends Error {
   }
 }
 
+export const getReceiptApiErrorMessage = (
+  error: unknown,
+  text: (zh: string, en: string) => string,
+  fallback: string,
+) => {
+  if (!(error instanceof ReceiptApiError)) return fallback;
+  if (error.code === 'INVALID_RESPONSE') {
+    return text(
+      '服务返回了无法读取的数据。',
+      'The service returned an unreadable response.',
+    );
+  }
+  if (error.code === 'NETWORK_ERROR') {
+    return text(
+      '无法连接 receiptly 服务，请检查网络后重试。',
+      'Could not connect to receiptly. Check your connection and try again.',
+    );
+  }
+  return error.message;
+};
+
 export async function scanReceiptImage(
   imageUri: string,
   options: ScanReceiptOptions = {},

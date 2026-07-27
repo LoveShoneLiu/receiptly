@@ -21,11 +21,7 @@ type SpendingSummaryProps = {
 const formatCurrency = (cents: number) =>
   new Intl.NumberFormat('en-NZ', { currency: 'NZD', style: 'currency' }).format(cents / 100);
 
-const periods: { label: string; value: OverviewPeriodPreset }[] = [
-  { label: '本周', value: 'week' },
-  { label: '本月', value: 'month' },
-  { label: '本年', value: 'year' },
-];
+const periods: OverviewPeriodPreset[] = ['week', 'month', 'year'];
 
 const formatDate = (value: string) => value.replaceAll('-', '/');
 
@@ -39,12 +35,12 @@ export function SpendingSummary({
 }: SpendingSummaryProps) {
   const { text } = useLanguage();
   const localizedPeriods = periods.map((item) => ({
-    ...item,
-    label: item.value === 'week'
+    label: item === 'week'
       ? text('本周', 'Week')
-      : item.value === 'month'
+      : item === 'month'
         ? text('本月', 'Month')
         : text('本年', 'Year'),
+    value: item,
   }));
 
   return (

@@ -1,5 +1,7 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { useLanguage } from '../../i18n/LanguageContext';
+
 type CurrencyFieldProps = {
   label: string;
   value: string;
@@ -22,6 +24,7 @@ export const inputToCents = (value: string): number | null | undefined => {
 };
 
 export function CurrencyField({ label, value, onChange }: CurrencyFieldProps) {
+  const { text } = useLanguage();
   const invalid = inputToCents(value) === undefined;
 
   return (
@@ -39,7 +42,11 @@ export function CurrencyField({ label, value, onChange }: CurrencyFieldProps) {
           value={value}
         />
       </View>
-      {invalid && <Text accessibilityRole="alert" style={styles.error}>金额最多保留两位小数。</Text>}
+      {invalid && (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {text('金额最多保留两位小数。', 'Enter an amount with no more than two decimal places.')}
+        </Text>
+      )}
     </View>
   );
 }

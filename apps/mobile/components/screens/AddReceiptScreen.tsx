@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 
 import {
-  ReceiptApiError,
+  getReceiptApiErrorMessage,
   scanReceiptImage,
   type ReceiptScanData,
 } from '../../api/receiptScan';
@@ -117,9 +117,14 @@ export function AddReceiptScreen({ accessToken, onScanComplete }: AddReceiptScre
       onScanComplete(data);
     } catch (error) {
       if (controller.signal.aborted) return;
-      setScanError(error instanceof ReceiptApiError
-        ? error.message
-        : text('识别失败，请重新选择图片或稍后重试。', 'Recognition failed. Choose another image or try again later.'));
+      setScanError(getReceiptApiErrorMessage(
+        error,
+        text,
+        text(
+          '识别失败，请重新选择图片或稍后重试。',
+          'Recognition failed. Choose another image or try again later.',
+        ),
+      ));
     } finally {
       if (scanControllerRef.current === controller) scanControllerRef.current = null;
       setIsScanning(false);

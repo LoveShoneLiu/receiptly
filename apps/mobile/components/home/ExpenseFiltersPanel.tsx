@@ -83,13 +83,31 @@ export function ExpenseFiltersPanel({
 
       <View style={styles.grid}>
         <View style={styles.gridItem}>
-          <FilterSelect label={text('门店', 'Store')} onChange={(next) => onFilterChange('store', next)} options={stores} value={filters.store} />
+          <FilterSelect
+            emptyLabel={text('全部门店', 'All stores')}
+            label={text('门店', 'Store')}
+            onChange={(next) => onFilterChange('store', next)}
+            options={stores}
+            value={filters.store}
+          />
         </View>
         <View style={styles.gridItem}>
-          <FilterSelect label={text('小票编号', 'Receipt number')} onChange={(next) => onFilterChange('receiptNumber', next)} options={receipts} value={filters.receiptNumber} />
+          <FilterSelect
+            emptyLabel={text('全部小票', 'All receipts')}
+            label={text('小票编号', 'Receipt number')}
+            onChange={(next) => onFilterChange('receiptNumber', next)}
+            options={receipts}
+            value={filters.receiptNumber}
+          />
         </View>
       </View>
-      <FilterSelect label={text('商品名', 'Product')} onChange={(next) => onFilterChange('productName', next)} options={products} value={filters.productName} />
+      <FilterSelect
+        emptyLabel={text('全部商品', 'All products')}
+        label={text('商品名', 'Product')}
+        onChange={(next) => onFilterChange('productName', next)}
+        options={products}
+        value={filters.productName}
+      />
 
       <Pressable
         accessibilityHint={text('应用时间、门店、小票和商品名筛选', 'Apply date, store, receipt and product filters')}

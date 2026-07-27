@@ -3,13 +3,20 @@ import { useState } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
 
 type FilterSelectProps = {
+  emptyLabel: string;
   label: string;
   value: string;
   options: string[];
   onChange: (value: string) => void;
 };
 
-export function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
+export function FilterSelect({
+  emptyLabel,
+  label,
+  value,
+  options,
+  onChange,
+}: FilterSelectProps) {
   const { text } = useLanguage();
   const [open, setOpen] = useState(false);
 
@@ -28,7 +35,7 @@ export function FilterSelect({ label, value, options, onChange }: FilterSelectPr
       >
         <Text style={styles.label}>{label}</Text>
         <View style={styles.valueRow}>
-          <Text numberOfLines={1} style={styles.value}>{value}</Text>
+          <Text numberOfLines={1} style={styles.value}>{value || emptyLabel}</Text>
           <Text style={styles.chevron}>⌄</Text>
         </View>
       </Pressable>
@@ -52,7 +59,7 @@ export function FilterSelect({ label, value, options, onChange }: FilterSelectPr
                   <Pressable
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
-                    key={option}
+                    key={option || '__all__'}
                     onPress={() => selectOption(option)}
                     style={({ pressed }) => [
                       styles.option,
@@ -60,7 +67,9 @@ export function FilterSelect({ label, value, options, onChange }: FilterSelectPr
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{option}</Text>
+                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
+                      {option || emptyLabel}
+                    </Text>
                     {selected && <Text style={styles.check}>✓</Text>}
                   </Pressable>
                 );

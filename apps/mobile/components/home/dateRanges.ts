@@ -3,9 +3,9 @@ import type { DateRange, OverviewPeriodPreset } from './types';
 const HOUSEHOLD_TIME_ZONE = 'Pacific/Auckland';
 
 export const DEFAULT_FILTERS = {
-  store: '全部门店',
-  receiptNumber: '全部小票',
-  productName: '全部商品',
+  store: '',
+  receiptNumber: '',
+  productName: '',
 } as const;
 
 const formatIsoDate = (date: Date) => date.toISOString().slice(0, 10);
@@ -72,12 +72,21 @@ export const isValidIsoDate = (value: string) => {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 };
 
-export const validateDateRange = (range: DateRange) => {
+export const validateDateRange = (
+  range: DateRange,
+  text: (zh: string, en: string) => string,
+) => {
   if (!isValidIsoDate(range.start) || !isValidIsoDate(range.end)) {
-    return '请输入有效日期，格式为 YYYY-MM-DD。';
+    return text(
+      '请输入有效日期，格式为 YYYY-MM-DD。',
+      'Enter valid dates in YYYY-MM-DD format.',
+    );
   }
   if (range.start > range.end) {
-    return '开始日期不能晚于结束日期。';
+    return text(
+      '开始日期不能晚于结束日期。',
+      'The start date cannot be later than the end date.',
+    );
   }
   return null;
 };

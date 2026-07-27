@@ -151,7 +151,7 @@ export function HouseholdOnboardingScreen() {
                 editable={!busy}
                 maxLength={80}
                 onChangeText={setName}
-                placeholder="例如：Liu Family"
+                placeholder={text('例如：Liu Family', 'For example: Liu Family')}
                 placeholderTextColor="#95A29B"
                 style={styles.input}
                 value={name}
@@ -184,7 +184,7 @@ export function HouseholdOnboardingScreen() {
                   setInvitationCode(normalizeInvitationCode(value));
                   setError(null);
                 }}
-                placeholder="例如：A7KM3X9P"
+                placeholder={text('例如：A7KM3X9P', 'For example: A7KM3X9P')}
                 placeholderTextColor="#95A29B"
                 style={[styles.input, styles.codeInput]}
                 value={invitationCode}
@@ -236,7 +236,9 @@ export function HouseholdOnboardingScreen() {
                   }}
                   style={styles.secondary}
                 >
-                  <Text style={styles.secondaryText}>使用其他邀请码</Text>
+                  <Text style={styles.secondaryText}>
+                    {text('使用其他邀请码', 'Use another invitation code')}
+                  </Text>
                 </Pressable>
               )}
             </>
@@ -250,7 +252,7 @@ export function HouseholdOnboardingScreen() {
             onPress={() => void logout()}
             style={styles.logout}
           >
-            <Text style={styles.logoutText}>退出登录</Text>
+            <Text style={styles.logoutText}>{text('退出登录', 'Log out')}</Text>
           </Pressable>
         </View>
       </ScrollView>

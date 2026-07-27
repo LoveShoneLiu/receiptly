@@ -35,8 +35,8 @@ import { useLanguage } from '../../i18n/LanguageContext';
 
 const PAGE_SIZE = 20;
 
-const getMessage = (error: unknown) =>
-  error instanceof Error ? error.message : '加载家庭账本失败，请稍后重试。';
+const getMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
 
 const toApiQuery = ({ range, filters }: AppliedExpenseQuery, cursor?: string) => ({
   start: range.start,
@@ -146,7 +146,10 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
       setPageCursors([undefined]);
     } catch (loadError) {
       if (requestId !== requestIdRef.current) return;
-      setError(getMessage(loadError));
+      setError(getMessage(
+        loadError,
+        text('加载家庭账本失败，请稍后重试。', 'Could not load the household ledger. Try again.'),
+      ));
     } finally {
       if (requestId === requestIdRef.current) {
         setLoading(false);
@@ -160,6 +163,7 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
     accessToken,
     appliedDetailQuery,
     householdId,
+    text,
   ]);
 
   useEffect(() => {
@@ -173,7 +177,7 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
     || detailFilters.receiptNumber !== appliedDetailQuery.filters.receiptNumber;
 
   const applyDetailFilters = () => {
-    const nextError = validateDateRange(detailDraftRange);
+    const nextError = validateDateRange(detailDraftRange, text);
     if (nextError) {
       setDetailDateError(nextError);
       return;
@@ -228,7 +232,12 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
       setDetailData(nextDetailData);
       setPage(targetPage);
     } catch (loadError) {
-      if (requestId === requestIdRef.current) setError(getMessage(loadError));
+      if (requestId === requestIdRef.current) {
+        setError(getMessage(
+          loadError,
+          text('加载家庭账本失败，请稍后重试。', 'Could not load the household ledger. Try again.'),
+        ));
+      }
     } finally {
       if (requestId === requestIdRef.current) setPendingPage(null);
     }

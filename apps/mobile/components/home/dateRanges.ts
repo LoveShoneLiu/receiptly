@@ -1,4 +1,4 @@
-import type { DateRange, PeriodPreset } from './types';
+import type { DateRange, OverviewPeriodPreset } from './types';
 
 const HOUSEHOLD_TIME_ZONE = 'Pacific/Auckland';
 
@@ -41,10 +41,12 @@ const endOfMonth = new Date(Date.UTC(
   householdToday.getUTCMonth() + 1,
   0,
 ));
+const startOfYear = new Date(Date.UTC(householdToday.getUTCFullYear(), 0, 1));
+const endOfYear = new Date(Date.UTC(householdToday.getUTCFullYear(), 11, 31));
 const startOfCustomRange = new Date(householdToday);
 startOfCustomRange.setUTCMonth(startOfCustomRange.getUTCMonth() - 1);
 
-export const PERIOD_RANGES: Record<Exclude<PeriodPreset, 'custom'>, DateRange> = {
+export const PERIOD_RANGES: Record<OverviewPeriodPreset, DateRange> = {
   week: {
     start: formatIsoDate(startOfWeek),
     end: formatIsoDate(householdToday),
@@ -52,6 +54,10 @@ export const PERIOD_RANGES: Record<Exclude<PeriodPreset, 'custom'>, DateRange> =
   month: {
     start: formatIsoDate(startOfMonth),
     end: formatIsoDate(endOfMonth),
+  },
+  year: {
+    start: formatIsoDate(startOfYear),
+    end: formatIsoDate(endOfYear),
   },
 };
 

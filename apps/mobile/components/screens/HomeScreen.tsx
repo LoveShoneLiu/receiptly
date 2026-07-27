@@ -24,12 +24,12 @@ import {
 import { ExpenseFiltersPanel } from '../home/ExpenseFiltersPanel';
 import { ExpenseList } from '../home/ExpenseList';
 import { FilteredSpendingTotal } from '../home/FilteredSpendingTotal';
-import { PeriodSelector } from '../home/PeriodSelector';
 import { SpendingSummary } from '../home/SpendingSummary';
 import type {
   AppliedExpenseQuery,
   DateRange,
   ExpenseFilters,
+  OverviewPeriodPreset,
   PeriodPreset,
 } from '../home/types';
 
@@ -61,10 +61,7 @@ type HomeScreenProps = {
 };
 
 export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
-  const [overviewPeriod, setOverviewPeriod] = useState<PeriodPreset>('month');
-  const [overviewCustomDraft, setOverviewCustomDraft] = useState<DateRange>(INITIAL_CUSTOM_RANGE);
-  const [overviewCustomRange, setOverviewCustomRange] = useState<DateRange>(INITIAL_CUSTOM_RANGE);
-  const [overviewDateError, setOverviewDateError] = useState<string | null>(null);
+  const [overviewPeriod, setOverviewPeriod] = useState<OverviewPeriodPreset>('month');
   const [overviewData, setOverviewData] = useState<HomeExpensesData | null>(null);
 
   const [detailPeriod, setDetailPeriod] = useState<PeriodPreset>('month');
@@ -85,11 +82,7 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
 
-  const activeOverviewRange = overviewPeriod === 'custom'
-    ? overviewCustomRange
-    : PERIOD_RANGES[overviewPeriod];
-  const hasPendingOverviewRange = overviewCustomDraft.start !== overviewCustomRange.start
-    || overviewCustomDraft.end !== overviewCustomRange.end;
+  const activeOverviewRange = PERIOD_RANGES[overviewPeriod];
   const detailDraftRange = detailPeriod === 'custom'
     ? detailCustomRange
     : PERIOD_RANGES[detailPeriod];
@@ -175,16 +168,6 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
     || detailFilters.store !== appliedDetailQuery.filters.store
     || detailFilters.productName !== appliedDetailQuery.filters.productName
     || detailFilters.receiptNumber !== appliedDetailQuery.filters.receiptNumber;
-
-  const applyOverviewCustomRange = () => {
-    const nextError = validateDateRange(overviewCustomDraft);
-    if (nextError) {
-      setOverviewDateError(nextError);
-      return;
-    }
-    setOverviewCustomRange({ ...overviewCustomDraft });
-    setOverviewDateError(null);
-  };
 
   const applyDetailFilters = () => {
     const nextError = validateDateRange(detailDraftRange);
@@ -324,34 +307,11 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
         </View>
       )}
 
-      <View style={styles.periodCard}>
-        <View style={styles.periodHeader}>
-          <Text style={styles.sectionLabel}>账单总览时间</Text>
-          <Text style={styles.timezone}>Pacific/Auckland</Text>
-        </View>
-        <PeriodSelector
-          onChange={(nextPeriod) => {
-            setOverviewPeriod(nextPeriod);
-            setOverviewDateError(null);
-          }}
-          range={activeOverviewRange}
-          value={overviewPeriod}
-        />
-        {overviewPeriod === 'custom' && (
-          <CustomDateRange
-            applyDisabled={!hasPendingOverviewRange}
-            draftRange={overviewCustomDraft}
-            error={overviewDateError}
-            onApply={applyOverviewCustomRange}
-            onChange={(field, value) => {
-              setOverviewCustomDraft((current) => ({ ...current, [field]: value }));
-              setOverviewDateError(null);
-            }}
-          />
-        )}
-      </View>
-
       <SpendingSummary
+        loading={loading && overviewData !== null}
+        onPeriodChange={setOverviewPeriod}
+        period={overviewPeriod}
+        range={activeOverviewRange}
         totalCents={overviewData?.summary.totalCents ?? 0}
         updatedAt={updatedAt}
       />
@@ -461,16 +421,6 @@ const styles = StyleSheet.create({
   loadingCard: { backgroundColor: '#EDF3E9', borderRadius: 16, padding: 16 },
   loadingTitle: { color: '#2A5041', fontSize: 14, fontWeight: '800' },
   loadingText: { color: '#61776C', fontSize: 12, marginTop: 4 },
-  periodCard: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E3E8E1',
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 15,
-  },
-  periodHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 13 },
-  sectionLabel: { color: '#294239', fontSize: 14, fontWeight: '700' },
-  timezone: { color: '#89968F', fontSize: 10 },
   detailsHeading: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   detailsTitle: { color: '#1F382F', fontSize: 21, fontWeight: '800' },
   detailsSubtitle: { color: '#7A8981', fontSize: 12, marginTop: 4 },

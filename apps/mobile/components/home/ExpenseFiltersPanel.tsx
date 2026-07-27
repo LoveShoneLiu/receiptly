@@ -1,4 +1,10 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { CustomDateRange } from './CustomDateRange';
 import { FilterSelect } from './FilterSelect';
@@ -15,6 +21,7 @@ type ExpenseFiltersPanelProps = {
   products: string[];
   receipts: string[];
   hasPendingChanges: boolean;
+  applying: boolean;
   onPeriodChange: (period: PeriodPreset) => void;
   onCustomRangeChange: (field: keyof DateRange, value: string) => void;
   onFilterChange: (field: keyof ExpenseFilters, value: string) => void;
@@ -32,6 +39,7 @@ export function ExpenseFiltersPanel({
   products,
   receipts,
   hasPendingChanges,
+  applying,
   onPeriodChange,
   onCustomRangeChange,
   onFilterChange,
@@ -83,10 +91,21 @@ export function ExpenseFiltersPanel({
       <Pressable
         accessibilityHint="应用时间、门店、小票和商品名筛选"
         accessibilityRole="button"
+        accessibilityState={{ busy: applying, disabled: applying }}
+        disabled={applying}
         onPress={onApply}
-        style={({ pressed }) => [styles.applyButton, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.applyButton,
+          applying && styles.applyButtonLoading,
+          pressed && !applying && styles.pressed,
+        ]}
       >
-        <Text style={styles.applyButtonText}>确定并查看结果</Text>
+        <View style={styles.applyButtonContent}>
+          {applying && <ActivityIndicator color="#1A382D" size="small" />}
+          <Text style={styles.applyButtonText}>
+            {applying ? '正在更新结果…' : '确定并查看结果'}
+          </Text>
+        </View>
       </Pressable>
     </View>
   );
@@ -126,6 +145,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 50,
   },
+  applyButtonContent: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 9,
+    justifyContent: 'center',
+  },
+  applyButtonLoading: { backgroundColor: '#E2E9A2' },
   applyButtonText: { color: '#1A382D', fontSize: 15, fontWeight: '800' },
   pressed: { opacity: 0.72 },
 });

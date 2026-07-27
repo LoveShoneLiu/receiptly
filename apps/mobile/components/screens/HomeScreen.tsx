@@ -76,6 +76,7 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
   const [page, setPage] = useState(1);
   const [pageCursors, setPageCursors] = useState<Array<string | undefined>>([undefined]);
   const [pendingPage, setPendingPage] = useState<number | null>(null);
+  const [applyingFilters, setApplyingFilters] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -149,6 +150,7 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
       if (requestId === requestIdRef.current) {
         setLoading(false);
         setRefreshing(false);
+        setApplyingFilters(false);
       }
     }
   }, [
@@ -180,6 +182,7 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
       range: { ...detailDraftRange },
       filters: { ...detailFilters },
     });
+    setApplyingFilters(true);
     setDetailDateError(null);
     setPage(1);
     setPageCursors([undefined]);
@@ -324,6 +327,7 @@ export function HomeScreen({ accessToken, householdId }: HomeScreenProps) {
       </View>
 
       <ExpenseFiltersPanel
+        applying={applyingFilters}
         customRange={detailCustomRange}
         dateError={detailDateError}
         filters={detailFilters}

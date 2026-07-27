@@ -1,15 +1,35 @@
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { AuthHousehold, AuthUser } from '../../auth/types';
+import { HouseholdMembersScreen } from './HouseholdMembersScreen';
 
 type ProfileScreenProps = {
+  accessToken: string;
   household: AuthHousehold;
   onLogout: () => void;
   user: AuthUser;
 };
 
-export function ProfileScreen({ household, onLogout, user }: ProfileScreenProps) {
+export function ProfileScreen({
+  accessToken,
+  household,
+  onLogout,
+  user,
+}: ProfileScreenProps) {
+  const [showMembers, setShowMembers] = useState(false);
   const avatar = (user.displayName ?? user.email ?? 'R').slice(0, 1).toUpperCase();
+
+  if (showMembers) {
+    return (
+      <HouseholdMembersScreen
+        accessToken={accessToken}
+        household={household}
+        onBack={() => setShowMembers(false)}
+        user={user}
+      />
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -37,7 +57,13 @@ export function ProfileScreen({ household, onLogout, user }: ProfileScreenProps)
 
       <View style={styles.settingsGroup}>
         <SettingRow label="当前家庭" value={household.name} />
-        <SettingRow label="默认货币" value="NZD" />
+        <SettingRow
+          label="家庭成员"
+          onPress={() => setShowMembers(true)}
+          value={household.role === 'owner' ? '管理 ›' : '查看 ›'}
+        />
+        <SettingRow label="我的角色" value={household.role === 'owner' ? '管理员' : '成员'} />
+        <SettingRow label="默认货币" value={household.currency ?? 'NZD'} />
         <SettingRow label="隐私与数据" value="›" last />
       </View>
 
@@ -49,7 +75,34 @@ export function ProfileScreen({ household, onLogout, user }: ProfileScreenProps)
   );
 }
 
-function SettingRow({ label, value, last = false }: { label: string; value: string; last?: boolean }) {
+function SettingRow({
+  label,
+  value,
+  last = false,
+  onPress,
+}: {
+  label: string;
+  value: string;
+  last?: boolean;
+  onPress?: () => void;
+}) {
+  if (onPress) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.settingRow,
+          last && styles.settingRowLast,
+          pressed && styles.pressed,
+        ]}
+      >
+        <Text style={styles.settingLabel}>{label}</Text>
+        <Text style={styles.settingValue}>{value}</Text>
+      </Pressable>
+    );
+  }
+
   return (
     <View style={[styles.settingRow, last && styles.settingRowLast]}>
       <Text style={styles.settingLabel}>{label}</Text>

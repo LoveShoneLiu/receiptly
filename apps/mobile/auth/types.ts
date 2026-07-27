@@ -1,5 +1,5 @@
 export type HouseholdRole = 'owner' | 'member';
-export type OnboardingState = 'needs_profile' | 'needs_household' | 'ready';
+export type OnboardingState = 'needs_household' | 'ready';
 
 export type AuthUser = {
   id: string;
@@ -8,9 +8,11 @@ export type AuthUser = {
 };
 
 export type AuthHousehold = {
+  currency?: string;
   id: string;
   name: string;
   role: HouseholdRole;
+  timezone?: string;
 };
 
 export type AuthSession = {

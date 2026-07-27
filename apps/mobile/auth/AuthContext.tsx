@@ -15,6 +15,7 @@ import {
   logoutSession,
   refreshSession,
 } from '../api/auth';
+import { acceptHouseholdInvitation as acceptHouseholdInvitationRequest } from '../api/households';
 import {
   clearStoredSession,
   loadStoredSession,
@@ -25,6 +26,7 @@ import type { AuthSession } from './types';
 type AuthContextValue = {
   session: AuthSession | null;
   restoring: boolean;
+  acceptHouseholdInvitation: (code: string) => Promise<void>;
   acceptSession: (session: AuthSession) => Promise<void>;
   createHousehold: (name: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -109,6 +111,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, [persistSession]);
 
+  const acceptHouseholdInvitation = useCallback(async (code: string) => {
+    const current = sessionRef.current;
+    if (!current) throw new Error('请先登录。');
+
+    const result = await acceptHouseholdInvitationRequest(current.accessToken, code);
+    const joinedSession: AuthSession = {
+      ...current,
+      activeHouseholdId: result.activeHouseholdId,
+      households: [result.household],
+      onboardingState: result.onboardingState,
+    };
+    await persistSession(joinedSession);
+
+    try {
+      const synchronizedSession = await getMe(joinedSession.accessToken, joinedSession);
+      await persistSession(synchronizedSession);
+    } catch {
+      // Acceptance succeeded; the optimistic session keeps the user in the joined household.
+    }
+  }, [persistSession]);
+
   const logout = useCallback(async () => {
     const current = sessionRef.current;
     await persistSession(null);
@@ -121,12 +144,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [persistSession]);
 
   const value = useMemo(() => ({
+    acceptHouseholdInvitation,
     acceptSession,
     createHousehold,
     logout,
     restoring,
     session,
-  }), [acceptSession, createHousehold, logout, restoring, session]);
+  }), [
+    acceptHouseholdInvitation,
+    acceptSession,
+    createHousehold,
+    logout,
+    restoring,
+    session,
+  ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

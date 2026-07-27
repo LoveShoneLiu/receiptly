@@ -24,7 +24,7 @@ const isNullableString = (value: unknown): value is string | null =>
   typeof value === 'string' || value === null;
 
 const isOnboardingState = (value: unknown): value is OnboardingState =>
-  value === 'needs_profile' || value === 'needs_household' || value === 'ready';
+  value === 'needs_household' || value === 'ready';
 
 const isUser = (value: unknown): value is AuthUser =>
   isRecord(value)

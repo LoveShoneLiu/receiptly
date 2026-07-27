@@ -76,6 +76,7 @@ function AppContent() {
             )}
             {activeTab === 'profile' && (
               <ProfileScreen
+                accessToken={session.accessToken}
                 household={activeHousehold}
                 onLogout={() => void logout()}
                 user={session.user}

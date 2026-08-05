@@ -90,9 +90,7 @@ export function ReceiptReviewScreen({
         const linePrice = inputToCents(line.linePriceInput);
         const unitPrice = inputToCents(line.unitPriceInput);
         return linePrice === undefined
-          || unitPrice === undefined
-          || (typeof linePrice === 'number' && linePrice < 0)
-          || (typeof unitPrice === 'number' && unitPrice < 0);
+          || unitPrice === undefined;
       });
     const hasMissingLinePrice = parsedPrices.some((value) => value === null || value === undefined);
     const hasMissingRequiredFields = !receipt.storeName?.trim()
